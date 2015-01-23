@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block style %}
+{% endblock %}
+
+{% block content %}
+  <div class="row">
+{% for artist in artists %}
+  <div class="col-lg-4 col-md-5 col-sm-6 col-xs-12">
+    <p>
+      <strong>{{ artist.artist }}</strong></br>
+      <span class="text-muted">{{ artist.albums|length }} Albums</span>
+    </p>
+  {% for album in artist.albums %}
+    <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+      <div class="thumbnail thumbnail-relative">
+        <a href="{{ url_for('get_album', album_id=album.id) }}">
+          <img src="{{ album.artpath }}" class="img-responsive">
+        </a>
+        <div class="caption caption-overlay">
+          <strong>{{ album.album }}</strong></br>
+          <span class="text-muted">{{ album.year }}</span>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+  </div>
+{% endfor %}
+  </div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-lg-3 col-md-4 col-sm-5 col-xs-12">
+      <div class="thumbnail thumbnail-relative">
+        <img src="{{ album.artpath }}" class="img-responsive">
+        <div class="caption caption-overlay">
+          <h4>{{ album.album }}
+            <small class="text-muted">{{ album.year }}</small>
+          </h4>
+          <span class="text-muted">{{ album.albumartist }}</span>
+          <span class="pull-right">
+            <a href="{{ url_for('get_album_file', album_id=album.id) }}">
+              <i class="fa fa-download"></i>
+            </a>
+          </span>
+        </div>
+      </div>
+    </div>
+<div class="col-lg-4 col-md-5 col-sm-6 col-xs-12">
+    {% for disc in range(album.disctotal) %}
+      {% set disc_loop = loop %}
+      <p><strong>Disc: {{ loop.index }}</strong></p>
+      <ul class="list-unstyled">
+      {% for track in album.tracks %}
+        {% if track.disc == disc_loop.index %}
+          <li>
+            {{ track.track }}. {{ track.title }}
+            <span class="pull-right">
+              {{ track.length|duration }}
+              <a href="{{ url_for('get_track_file', track_id=track.id) }}">
+                <i class="fa fa-download"></i>
+              </a>
+            </span><br>
+            <small class="text-muted">
+              {{ track.artist  }}
+            </small>
+          </li>
+        {% endif %}
+      {% endfor %}
+      </ul>
+    {% endfor %}
+    </div>
+  </div>
+{% endblock %}
