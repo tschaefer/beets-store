@@ -6,6 +6,8 @@ import operator
 import tempfile
 from zipfile import ZipFile, ZIP_DEFLATED
 
+import werkzeug
+
 import beets
 from beets.plugins import BeetsPlugin
 from beets.ui import Subcommand
@@ -73,10 +75,25 @@ def duration_filter(timestamp):
 @app.before_request
 def before_request():
     flask.g.lib = app.config['lib']
-    if app.config.has_key('zipdir'):
+    if 'zipdir' in app.config.keys():
         flask.g.zipdir = unicode(app.config['zipdir'])
     else:
         flask.g.zipdir = unicode(tempfile.gettempdir())
+
+
+@app.errorhandler(405)
+@app.errorhandler(404)
+def page_not_found(e):
+    if isinstance(e, werkzeug.exceptions.NotFound):
+        if request_json():
+            error = "Oops! The Page you requested was not found!"
+            return flask.jsonify(error=error), 404
+        return flask.render_template('http_error.html', error=404), 404
+    if isinstance(e, werkzeug.exceptions.MethodNotAllowed):
+        if request_json():
+            error = "Oops! The requested method is not allowed!"
+            return flask.jsonify(error=error), 405
+        return flask.render_template('http_error.html', error=405), 405
 
 
 @app.route('/track/<int:track_id>/file')
