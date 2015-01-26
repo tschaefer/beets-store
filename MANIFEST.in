@@ -1,0 +1,2 @@
+recursive-include beetsplug/store/templates *
+recursive-include beetsplug/store/static *
