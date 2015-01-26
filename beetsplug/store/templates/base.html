@@ -59,14 +59,7 @@
             <a href="{{ url_for('.get_tracks') }}">Tracks</a>
           </li>
         </ul>
-        <form class="navbar-form navbar-right hidden-xs" method="post" role="search">
-          <div class="form-group">
-            <input type="text" name="query" class="form-control input-sm">
-          </div>
-          <button type="submit" class="btn btn-default btn-sm">
-            Search
-          </button>
-        </form>
+        {% block navbar_form %}{% endblock %}
       </div>
     </div>
   </nav>
