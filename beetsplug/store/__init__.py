@@ -37,7 +37,7 @@ def obj_to_dict(obj, expand=False):
             out['tracks'] = [obj_to_dict(track) for track in obj.items()]
 
     if isinstance(obj, beets.library.Item):
-        del out['path']
+        out['path'] = media_url(out['path'])
 
     return out
 
@@ -46,7 +46,7 @@ media = Blueprint('media',
                   __name__,
                   static_url_path='/media',
                   static_folder=beets.config['directory'].get(unicode))
-app = flask.Flask(__name__)
+app = Flask(__name__)
 app.register_blueprint(media)
 
 

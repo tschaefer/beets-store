@@ -28,10 +28,26 @@
           </span>
         </div>
       </div>
+      <div style="display: table; margin: 0 auto;">
+        <audio id="audio">
+          {% for track in album.tracks %}
+            <source src="{{ track.path }}" />
+          {% endfor %}
+        </audio>
+        <button type="button" class="btn btn-default btn-sm button-pause">
+          <span class="fa fa-pause"></span>
+        </button>
+        <button type="button" class="btn btn-default btn-sm button-stop">
+          <span class="fa fa-stop"></span>
+        </button>
+        <button type="button" class="btn btn-default btn-sm button-play">
+          <span class="fa fa-play"></span>
+        </button>
+      </div>
     </div>
     <div class="col-lg-9 col-md-8 col-sm-7 col-xs-12">
-    {% for disc in range(album.disctotal) %}
       <div class="row">
+      {% for disc in range(album.disctotal) %}
         <div class="col-lg-5 col-sm-6 col-xs-12">
           {% set disc_loop = loop %}
           <p><strong>Disc: {{ loop.index }}</strong></p>
@@ -54,8 +70,35 @@
           {% endfor %}
           </ul>
         </div>
+      {% endfor %}
       </div>
-    {% endfor %}
     </div>
   </div>
+{% endblock %}
+
+{% block script %}
+<script>
+  var audio = $("#audio")[0];
+  $(".button-pause").on("click", function() {
+    $(".button-pause").blur();
+    $(".button-pause").addClass("active");
+    $(".button-play").removeClass("active");
+    audio.pause();
+  });
+
+  $(".button-play").on("click", function() {
+    $(".button-play").blur();
+    $(".button-play").addClass("active");
+    $(".button-pause").removeClass("active");
+    audio.play();
+  });
+
+  $(".button-stop").on("click", function() {
+    $(".button-stop").blur();
+    $(".button-play").removeClass("active");
+    $(".button-pause").removeClass("active");
+    audio.pause();
+    audio.currentTime = 0;
+  });
+</script>
 {% endblock %}
