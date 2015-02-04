@@ -125,14 +125,17 @@
     if (key == 80) {
       if (is_playing == true) {
         audio.pause()
-          is_playing = false;
-          $(".btn-play").removeClass("active");
-          $(".btn-pause").addClass("active");
+        is_playing = false;
+        $(".btn-play").removeClass("active");
+        $(".btn-pause").addClass("active");
+        $(tracks[index].id).removeClass("fa-spin");
+
       } else {
         audio.play();
         is_playing = true;
         $(".btn-play").addClass("active");
         $(".btn-pause").removeClass("active");
+        $(tracks[index].id).addClass("fa-spin");
       }
     }
   }
