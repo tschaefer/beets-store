@@ -55,6 +55,7 @@
             {% if track.disc == disc_loop.index %}
               <li>
                 {{ track.track }}. {{ track.title }}
+                <span id="track-{{ track.disc }}-{{ track.track }}" class="small"></span>
                 <span class="pull-right">
                   {{ track.length|duration }}
                   <a href="{{ url_for('get_track_file', track_id=track.id) }}">
@@ -78,37 +79,32 @@
 {% block script %}
 <script type="text/javascript">
   var audio = $("#audio").get(0);
-
-  $(".btn-pause").on("click", function() {
-    $(".btn-pause").blur();
-    $(".btn-pause").addClass("active");
-    $(".btn-play").removeClass("active");
-    audio.pause();
-  });
-
-  $(".btn-play").on("click", function() {
-    $(".btn-play").blur();
-    $(".btn-play").addClass("active");
-    $(".btn-pause").removeClass("active");
-    audio.play();
-  });
-
   var index = 0;
   var tracks = [
     {% for track in album.tracks %}
-      { "file": "{{ track.path|safe }}" },
+      {
+        "file": "{{ track.path|safe }}",
+        "id": "#track-{{ track.disc }}-{{ track.track }}",
+      },
     {% endfor %}
   ];
   var track_num = tracks.length;
+  var is_playing = false;
 
-  var loadTrack = function(idx) {
+  var loadTrack = function(last_idx, idx) {
     audio.src = tracks[idx].file;
+    if (last_idx != idx) {
+      $(tracks[last_idx].id).removeClass("fa fa-circle-o-notch fa-spin");
+    }
+    $(tracks[idx].id).addClass("fa fa-circle-o-notch");
+    if (is_playing == true) {
+      $(tracks[idx].id).addClass("fa-spin");
+    }
   }
 
   var onEnded = function() {
     if((index + 1) < track_num) {
-      index++;
-      loadTrack(index);
+      loadTrack(index, ++index);
       audio.play();
     } else {
       audio.pause();
@@ -117,24 +113,50 @@
     }
   }
 
-  loadTrack(index);
+  loadTrack(index, index);
   audio.addEventListener('ended', onEnded);
+
+  $(".btn-pause").on("click", function() {
+    if (is_playing == false) {
+      return;
+    }
+    $(".btn-pause").blur();
+    $(".btn-pause").addClass("active");
+    $(".btn-play").removeClass("active");
+    audio.pause();
+    is_playing = false;
+    $(tracks[index].id).removeClass("fa-spin");
+  });
+
+  $(".btn-play").on("click", function() {
+    if (is_playing == true) {
+      return;
+    }
+    $(".btn-play").blur();
+    $(".btn-play").addClass("active");
+    $(".btn-pause").removeClass("active");
+    audio.play();
+    is_playing = true;
+    $(tracks[index].id).addClass("fa-spin");
+  });
 
   $(".btn-next").on("click", function() {
     $(".btn-next").blur();
     if ((index + 1) < track_num) {
-      index++;
-      loadTrack(index);
-      audio.play();
+      loadTrack(index, ++index);
+      if (is_playing  == true) {
+        audio.play();
+      }
     }
   });
 
   $(".btn-prev").on("click", function() {
     $(".btn-prev").blur();
     if ((index - 1) > -1) {
-      index--;
-      loadTrack(index);
-      audio.play();
+      loadTrack(index, --index);
+      if (is_playing == true) {
+        audio.play();
+      }
     }
   });
 
