@@ -29,19 +29,18 @@
         </div>
       </div>
       <div style="display: table; margin: 0 auto;">
-        <audio id="audio">
-          {% for track in album.tracks %}
-            <source src="{{ track.path }}" />
-          {% endfor %}
-        </audio>
-        <button type="button" class="btn btn-default btn-sm button-pause">
+        <audio id="audio"></audio>
+        <button type="button" class="btn btn-default btn-sm btn-prev">
+          <span class="fa fa-step-backward"></span>
+        </button>
+        <button type="button" class="btn btn-default btn-sm btn-pause">
           <span class="fa fa-pause"></span>
         </button>
-        <button type="button" class="btn btn-default btn-sm button-stop">
-          <span class="fa fa-stop"></span>
-        </button>
-        <button type="button" class="btn btn-default btn-sm button-play">
+        <button type="button" class="btn btn-default btn-sm btn-play">
           <span class="fa fa-play"></span>
+        </button>
+        <button type="button" class="btn btn-default btn-sm btn-next">
+          <span class="fa fa-step-forward"></span>
         </button>
       </div>
     </div>
@@ -77,28 +76,67 @@
 {% endblock %}
 
 {% block script %}
-<script>
-  var audio = $("#audio")[0];
-  $(".button-pause").on("click", function() {
-    $(".button-pause").blur();
-    $(".button-pause").addClass("active");
-    $(".button-play").removeClass("active");
+<script type="text/javascript">
+  var audio = $("#audio").get(0);
+
+  $(".btn-pause").on("click", function() {
+    $(".btn-pause").blur();
+    $(".btn-pause").addClass("active");
+    $(".btn-play").removeClass("active");
     audio.pause();
   });
 
-  $(".button-play").on("click", function() {
-    $(".button-play").blur();
-    $(".button-play").addClass("active");
-    $(".button-pause").removeClass("active");
+  $(".btn-play").on("click", function() {
+    $(".btn-play").blur();
+    $(".btn-play").addClass("active");
+    $(".btn-pause").removeClass("active");
     audio.play();
   });
 
-  $(".button-stop").on("click", function() {
-    $(".button-stop").blur();
-    $(".button-play").removeClass("active");
-    $(".button-pause").removeClass("active");
-    audio.pause();
-    audio.currentTime = 0;
+  var index = 0;
+  var tracks = [
+    {% for track in album.tracks %}
+      { "file": "{{ track.path|safe }}" },
+    {% endfor %}
+  ];
+  var track_num = tracks.length;
+
+  var loadTrack = function(idx) {
+    audio.src = tracks[idx].file;
+  }
+
+  var onEnded = function() {
+    if((index + 1) < track_num) {
+      index++;
+      loadTrack(index);
+      audio.play();
+    } else {
+      audio.pause();
+      index = 0;
+      loadTrack(index);
+    }
+  }
+
+  loadTrack(index);
+  audio.addEventListener('ended', onEnded);
+
+  $(".btn-next").on("click", function() {
+    $(".btn-next").blur();
+    if ((index + 1) < track_num) {
+      index++;
+      loadTrack(index);
+      audio.play();
+    }
   });
+
+  $(".btn-prev").on("click", function() {
+    $(".btn-prev").blur();
+    if ((index - 1) > -1) {
+      index--;
+      loadTrack(index);
+      audio.play();
+    }
+  });
+
 </script>
 {% endblock %}

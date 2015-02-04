@@ -37,7 +37,8 @@ def obj_to_dict(obj, expand=False):
             out['tracks'] = [obj_to_dict(track) for track in obj.items()]
 
     if isinstance(obj, beets.library.Item):
-        out['path'] = media_url(out['path'])
+        out['path'] = media_url(
+            beets.util.syspath(out['path'].decode('utf-8')))
 
     return out
 
