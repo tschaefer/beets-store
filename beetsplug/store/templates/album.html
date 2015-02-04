@@ -119,6 +119,25 @@
   loadTrack(index, index);
   audio.addEventListener('ended', onEnded);
 
+  function keyEvent(e) {
+    var ev = window.event ? event : e;
+    var key = ev.charCode ? ev.charCode : ev.keyCode;
+    if (key == 80) {
+      if (is_playing == true) {
+        audio.pause()
+          is_playing = false;
+          $(".btn-play").removeClass("active");
+          $(".btn-pause").addClass("active");
+      } else {
+        audio.play();
+        is_playing = true;
+        $(".btn-play").addClass("active");
+        $(".btn-pause").removeClass("active");
+      }
+    }
+  }
+  document.onkeypress=keyEvent;
+
   $(".btn-pause").on("click", function() {
     if (is_playing == false) {
       return;
