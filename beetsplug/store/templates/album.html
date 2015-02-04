@@ -108,8 +108,11 @@
       audio.play();
     } else {
       audio.pause();
+      is_playing = false;
+      $(".btn-play").removeClass("active");
+      var last_idx = index;
       index = 0;
-      loadTrack(index);
+      loadTrack(last_idx, index);
     }
   }
 
