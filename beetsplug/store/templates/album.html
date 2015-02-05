@@ -83,7 +83,7 @@
   var tracks = [
     {% for track in album.tracks %}
       {
-        "file": "{{ track.path|safe }}",
+        "file": {{ track.path|tojson|safe }},
         "id": "#track-{{ track.disc }}-{{ track.track }}",
       },
     {% endfor %}
@@ -122,7 +122,7 @@
   function keyEvent(e) {
     var ev = window.event ? event : e;
     var key = ev.charCode ? ev.charCode : ev.keyCode;
-    if (key == 80) {
+    if (key == 83) {
       if (is_playing == true) {
         audio.pause()
         is_playing = false;
@@ -138,8 +138,23 @@
         $(tracks[index].id).addClass("fa-spin");
       }
     }
+    else if (key == 65) {
+      loadTrack(index, --index);
+      if (is_playing == true) {
+        audio.play();
+      }
+    }
+    else if (key == 68) {
+      loadTrack(index, ++index);
+      if (is_playing == true) {
+        audio.play();
+      }
+    }
   }
-  document.onkeypress=keyEvent;
+
+  $(document).ready(function() {
+    this.onkeypress=keyEvent;
+  });
 
   $(".btn-pause").on("click", function() {
     if (is_playing == false) {
