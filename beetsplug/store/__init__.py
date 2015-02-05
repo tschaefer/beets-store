@@ -16,6 +16,22 @@ import flask
 from flask import Flask, Blueprint
 
 
+media = Blueprint('media',
+                  __name__,
+                  static_url_path='/media',
+                  static_folder=beets.config['directory'].get(unicode))
+app = Flask(__name__)
+app.register_blueprint(media)
+
+
+def request_json():
+    best = flask.request.accept_mimetypes \
+        .best_match(['application/json', 'text/html'])
+    return best == 'application/json' and \
+        flask.request.accept_mimetypes[best] > \
+        flask.request.accept_mimetypes['text/html']
+
+
 def media_url(path):
     rel_path = os.path.relpath(path, beets.config['directory'].get(unicode))
     return os.path.join(os.path.sep, 'media', rel_path)
@@ -37,26 +53,13 @@ def obj_to_dict(obj, expand=False):
             out['tracks'] = [obj_to_dict(track) for track in obj.items()]
 
     if isinstance(obj, beets.library.Item):
-        out['path'] = media_url(
-            beets.util.syspath(out['path'].decode('utf-8')))
+        if request_json():
+            del out['path']
+        else:
+            out['path'] = media_url(
+                beets.util.syspath(out['path'].decode('utf-8')))
 
     return out
-
-
-media = Blueprint('media',
-                  __name__,
-                  static_url_path='/media',
-                  static_folder=beets.config['directory'].get(unicode))
-app = Flask(__name__)
-app.register_blueprint(media)
-
-
-def request_json():
-    best = flask.request.accept_mimetypes \
-        .best_match(['application/json', 'text/html'])
-    return best == 'application/json' and \
-        flask.request.accept_mimetypes[best] > \
-        flask.request.accept_mimetypes['text/html']
 
 
 @app.template_filter('duration')
