@@ -54,11 +54,11 @@
           {% for track in album.tracks %}
             {% if track.disc == disc_loop.index %}
               <li>
-                <button class="btn btn-link btn-xs btn-eject" value="{{ track.track }}">
+                <button class="btn btn-link btn-xs btn-eject" value="{{ loop.index }}">
                   <span class="fa fa-eject">
                 </button>
                 {{ track.track }}. {{ track.title }}
-                <span id="track-{{ track.disc }}-{{ track.track }}" class="small"></span>
+                <span id="track-{{ loop.index }}" class="small"></span>
                 <span class="pull-right">
                   {{ track.length|duration }}
                   <a href="{{ url_for('get_track_file', track_id=track.id) }}">
@@ -87,7 +87,7 @@
     {% for track in album.tracks %}
       {
         "file": {{ track.path|tojson|safe }},
-        "id": "#track-{{ track.disc }}-{{ track.track }}",
+        "id": "#track-{{ loop.index }}",
       },
     {% endfor %}
   ];
@@ -205,7 +205,7 @@
 
   $(".btn-eject").on("click", function() {
     this.blur();
-    loadTrack(index, index=(this.value -1));
+    loadTrack(index, index=(this.value - 1));
     if (is_playing == true) {
       audio.play();
     }
