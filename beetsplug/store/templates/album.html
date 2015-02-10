@@ -54,6 +54,9 @@
           {% for track in album.tracks %}
             {% if track.disc == disc_loop.index %}
               <li>
+                <button class="btn btn-link btn-xs btn-eject" value="{{ track.track }}">
+                  <span class="fa fa-eject">
+                </button>
                 {{ track.track }}. {{ track.title }}
                 <span id="track-{{ track.disc }}-{{ track.track }}" class="small"></span>
                 <span class="pull-right">
@@ -197,6 +200,14 @@
       if (is_playing == true) {
         audio.play();
       }
+    }
+  });
+
+  $(".btn-eject").on("click", function() {
+    this.blur();
+    loadTrack(index, index=(this.value -1));
+    if (is_playing == true) {
+      audio.play();
     }
   });
 
