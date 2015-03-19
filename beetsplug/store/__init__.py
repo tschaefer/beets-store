@@ -43,12 +43,12 @@ def obj_to_dict(obj, expand=False):
     out = {k: v for k, v in out.items() if v}
 
     if isinstance(obj, beets.library.Album):
-        if out['artpath']:
+        if out['artpath'] is not None and os.path.exists(out['artpath']):
             out['artpath'] = media_url(
                 beets.util.syspath(obj.artpath.decode('utf-8')))
         else:
-            out['artpath'] = os.path.join(os.path.sep, 'static', 'images',
-                                          'no-cover.png')
+            out['artpath'] = 'holder.js/500x500/gray/auto/text:%s/' \
+                    % (out['album'])
         if expand:
             out['tracks'] = [obj_to_dict(track) for track in obj.items()]
 
