@@ -43,6 +43,9 @@ def obj_to_dict(obj, expand=False):
     out = {k: v for k, v in out.items() if v}
 
     if isinstance(obj, beets.library.Album):
+        if 'artpath' not in out:
+            out['artpath'] = None
+
         if out['artpath'] is not None and os.path.exists(out['artpath']):
             out['artpath'] = media_url(
                 beets.util.syspath(obj.artpath.decode('utf-8')))
