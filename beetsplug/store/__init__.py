@@ -40,7 +40,7 @@ def media_url(path):
 def obj_to_dict(obj, expand=False):
     out = dict(obj)
     # remove empty values
-    out = {k: v for k, v in out.items() if v}
+    # out = {k: v for k, v in out.items() if v}
 
     if isinstance(obj, beets.library.Album):
         if 'artpath' not in out:
