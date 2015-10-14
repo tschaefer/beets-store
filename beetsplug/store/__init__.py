@@ -5,6 +5,7 @@ import uuid
 import operator
 import tempfile
 from zipfile import ZipFile, ZIP_DEFLATED
+from operator import itemgetter
 
 import werkzeug
 
@@ -53,7 +54,8 @@ def obj_to_dict(obj, expand=False):
             out['artpath'] = 'holder.js/500x500/gray/auto/text:%s/' \
                     % (out['album'])
         if expand:
-            out['tracks'] = [obj_to_dict(track) for track in obj.items()]
+            tracks = [obj_to_dict(track) for track in obj.items()]
+            out['tracks'] = sorted(tracks, key=itemgetter('track'))
 
     if isinstance(obj, beets.library.Item):
         if request_json():
