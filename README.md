@@ -11,7 +11,7 @@ A plugin for the music geek's media organizer.
 
 Install package and scripts.
 
-    $ pip install https://github.com/tschaefer//archive/master.zip
+    $ pip install https://github.com/tschaefer/beets-store/archive/master.zip
 
 ## Usage
 
