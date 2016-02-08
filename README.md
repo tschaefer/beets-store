@@ -23,6 +23,16 @@ store:
 	port: 8080
 ```
 
+Example beets [configuration file](https://gist.github.com/tschaefer/daa09959eb7272715800#gistcomment-1684418)
+
+Import audio files.
+
+    $ beet import
+
+Fetch cover art.
+
+    $ beet fetch
+
 Start the web service.
 
     $ beet store
