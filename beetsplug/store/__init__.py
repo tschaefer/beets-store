@@ -20,7 +20,7 @@ from flask import Flask, Blueprint
 media = Blueprint('media',
                   __name__,
                   static_url_path='/media',
-                  static_folder=beets.config['directory'].get(unicode))
+                  static_folder=beets.config['directory'].get())
 app = Flask(__name__)
 app.register_blueprint(media)
 
@@ -34,7 +34,7 @@ def request_json():
 
 
 def media_url(path):
-    rel_path = os.path.relpath(path, beets.config['directory'].get(unicode))
+    rel_path = os.path.relpath(path, beets.config['directory'].get())
     return os.path.join(os.path.sep, 'media', rel_path)
 
 
@@ -85,9 +85,9 @@ def duration_filter(timestamp):
 def before_request():
     flask.g.lib = app.config['lib']
     if 'zipdir' in app.config.keys():
-        flask.g.zipdir = unicode(app.config['zipdir'])
+        flask.g.zipdir = app.config['zipdir']
     else:
-        flask.g.zipdir = unicode(tempfile.gettempdir())
+        flask.g.zipdir = tempfile.gettempdir()
 
 
 @app.errorhandler(405)
@@ -111,7 +111,7 @@ def get_track_file(track_id):
     if not track:
         flask.abort(404)
     path = beets.util.syspath(track.path)
-    filename = os.path.basename(path)
+    filename = os.path.basename(path).decode("utf-8")
     response = flask.send_file(path, as_attachment=True,
                                attachment_filename=filename)
     response.headers['Content-Length'] = os.path.getsize(path)
@@ -123,7 +123,7 @@ def get_track_file(track_id):
 def get_tracks():
     query = None
     if flask.request.method == 'POST':
-        query = u"title::^%s" % (unicode(flask.request.form['query']))
+        query = u"title::^%s" % (flask.request.form['query'])
     tracks = [obj_to_dict(track) for track in flask.g.lib.items(query=query)]
     if request_json():
         return flask.jsonify(tracks=tracks)
@@ -135,7 +135,7 @@ def get_tracks():
 def get_artists():
     query = None
     if flask.request.method == 'POST':
-        query = unicode(flask.request.form['query'])
+        query = flask.request.form['query']
     with flask.g.lib.transaction() as tx:
         artists_list = tx.query("SELECT DISTINCT albumartist FROM albums")
     if query:
@@ -168,7 +168,7 @@ def get_album_file(album_id):
     if not album:
         flask.abort(404)
     tracks = [beets.util.syspath(track.path) for track in album.items()]
-    zfile = os.path.join(unicode(flask.g.zipdir), unicode(uuid.uuid4()))
+    zfile = os.path.join(flask.g.zipdir, str(uuid.uuid4()))
 
     @flask.after_this_request
     def cleanup(response):
@@ -178,11 +178,10 @@ def get_album_file(album_id):
     with ZipFile(zfile, 'w', ZIP_DEFLATED) as z:
         if album.artpath:
             artpath = beets.util.syspath(album.artpath.decode('utf-8'))
-            z.write(artpath, os.path.basename(artpath))
+            z.write(artpath.decode('utf-8'), os.path.basename(artpath).decode('utf-8'))
         for track in tracks:
-            z.write(track, os.path.basename(track))
-    filename = "%s - %s.zip" % (album.albumartist.encode('utf-8'),
-                                album.album.encode('utf-8'))
+            z.write(track.decode('utf-8'), os.path.basename(track).decode('utf-8'))
+    filename = "%s - %s.zip" % (album.albumartist, album.album)
     response = flask.send_file(zfile, as_attachment=True,
                                attachment_filename=filename)
     response.headers['Content-Length'] = os.path.getsize(zfile)
@@ -207,7 +206,7 @@ def get_album(album_id):
 def get_albums():
     query = None
     if flask.request.method == 'POST':
-        query = u"album::^%s" % (unicode(flask.request.form['query']))
+        query = u"album::^%s" % (flask.request.form['query'])
     albums = [obj_to_dict(album) for album in flask.g.lib.albums(query=query)]
     albums = sorted(albums, key=operator.itemgetter('album'))
     if request_json():
@@ -235,9 +234,9 @@ class Store(BeetsPlugin):
                 self.config['port'] = int(args.pop(0))
 
             if 'zipdir' in self.config.keys():
-                app.config['zipdir'] = self.config['zipdir'].get(unicode)
+                app.config['zipdir'] = self.config['zipdir'].get()
             app.config['lib'] = lib
-            app.run(host=self.config['host'].get(unicode),
+            app.run(host=self.config['host'].get(),
                     port=self.config['port'].get(int),
                     debug=True, threaded=True)
 
