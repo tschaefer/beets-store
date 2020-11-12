@@ -177,8 +177,8 @@ def get_album_file(album_id):
 
     with ZipFile(zfile, 'w', ZIP_DEFLATED) as z:
         if album.artpath:
-            artpath = beets.util.syspath(album.artpath.decode('utf-8'))
-            z.write(artpath.decode('utf-8'), os.path.basename(artpath).decode('utf-8'))
+            artpath = beets.util.syspath(album.artpath)
+            z.write(artpath, os.path.basename(artpath).decode('utf-8'))
         for track in tracks:
             z.write(track.decode('utf-8'), os.path.basename(track).decode('utf-8'))
     filename = "%s - %s.zip" % (album.albumartist, album.album)
