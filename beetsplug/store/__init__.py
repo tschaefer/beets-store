@@ -3,6 +3,7 @@
 import os
 import uuid
 import operator
+import re
 import tempfile
 from zipfile import ZipFile, ZIP_DEFLATED
 from operator import itemgetter
@@ -111,8 +112,8 @@ def get_track_file(track_id):
     if not track:
         flask.abort(404)
     path = beets.util.syspath(track.path)
-    filename = os.path.basename(path).decode("utf-8")
-    response = flask.send_file(path, as_attachment=True,
+    filename = os.path.basename(path).decode('utf-8')
+    response = flask.send_file(path.decode('utf-8'), as_attachment=True,
                                attachment_filename=filename)
     response.headers['Content-Length'] = os.path.getsize(path)
 
