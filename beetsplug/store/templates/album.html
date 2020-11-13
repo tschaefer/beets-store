@@ -45,36 +45,38 @@
       </div>
     </div>
     <div class="col-lg-9 col-md-8 col-sm-7 col-xs-12">
-      <div class="row">
       {% for disc in range(album.disctotal) %}
-        <div class="col-lg-5 col-sm-6 col-xs-12">
           {% set disc_loop = loop %}
           <p><strong>Disc: {{ loop.index }}</strong></p>
-          <ul class="list-unstyled">
-          {% for track in album.tracks %}
-            {% if track.disc == disc_loop.index %}
-              <li>
-                <button class="btn btn-link btn-xs btn-eject" value="{{ loop.index }}">
-                  <span class="fa fa-eject">
-                </button>
-                {{ track.track }}. {{ track.title }}
-                <span id="track-{{ loop.index }}" class="small"></span>
-                <span class="pull-right">
-                  {{ track.length|duration }}
-                  <a href="{{ url_for('get_track_file', track_id=track.id) }}">
-                    <i class="fa fa-download"></i>
-                  </a>
-                </span><br>
-                <small class="text-muted">
-                  {{ track.artist  }}
-                </small>
-              </li>
-            {% endif %}
-          {% endfor %}
-          </ul>
-        </div>
+          <table class="table table-hover table-striped table-ellipsis">
+            <tbody>
+            {% for track in album.tracks %}
+              {% if track.disc == disc_loop.index %}
+              <tr>
+                <td>
+                  <button class="btn btn-link btn-xs btn-eject" value="{{ loop.index }}">
+                    <span class="fa fa-eject"></span>
+                  </button>
+                  {{ track.track }}. {{ track.title }}
+                  <span id="track-{{ loop.index }}" class="small"></span>
+                </td>
+                <td>
+                  <small class="text-muted">
+                    {{ track.artist }}
+                  </small>
+                </td>
+                <td>
+                    {{ track.length|duration }}
+                    <a href="{{ url_for('get_track_file', track_id=track.id) }}">
+                      <i class="fa fa-download"></i>
+                    </a>
+                </td>
+              </tr>
+              {% endif %}
+            {% endfor %}
+            </tbody>
+          </table>
       {% endfor %}
-      </div>
     </div>
   </div>
 {% endblock %}
