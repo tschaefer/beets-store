@@ -33,13 +33,19 @@
         <button type="button" class="btn btn-default btn-sm btn-prev">
           <span class="fa fa-step-backward"></span>
         </button>
+        <button type="submit" class="btn btn-default btn-sm btn-backward">
+          <span class="fa fa-backward"></span>
+        </button>
         <button type="button" class="btn btn-default btn-sm btn-pause">
           <span class="fa fa-pause"></span>
         </button>
         <button type="button" class="btn btn-default btn-sm btn-play">
           <span class="fa fa-play"></span>
         </button>
-        <button type="button" class="btn btn-default btn-sm btn-next">
+        <button type="button" class="btn btn-default btn-sm btn-forward">
+          <span class="fa fa-forward"></span>
+        </button>
+        <button type="submit" class="btn btn-default btn-sm btn-next">
           <span class="fa fa-step-forward"></span>
         </button>
       </div>
@@ -58,7 +64,7 @@
                     <span class="fa fa-eject"></span>
                   </button>
                   {{ track.track }}. {{ track.title }}
-                  <span id="track-{{ loop.index }}" class="small"></span>
+                  <span id="track-{{ track.id }}" class="small"></span>
                 </td>
                 <td>
                   <small class="text-muted">
@@ -86,12 +92,17 @@
   var audio = $("#audio").get(0);
   var index = 0;
   var tracks = [
-    {% for track in album.tracks %}
+{% for disc in range(album.disctotal) %}
+  {% set disc_loop = loop %}
+  {% for track in album.tracks %}
+    {% if track.disc == disc_loop.index %}
       {
         "file": {{ track.path|tojson|safe }},
-        "id": "#track-{{ loop.index }}",
+        "id": "#track-{{ track.id }}",
       },
-    {% endfor %}
+    {% endif %}
+  {% endfor %}
+{% endfor %}
   ];
   var track_num = tracks.length;
   var is_playing = false;
@@ -123,43 +134,6 @@
 
   loadTrack(index, index);
   audio.addEventListener('ended', onEnded);
-
-  function keyEvent(e) {
-    var ev = window.event ? event : e;
-    var key = ev.charCode ? ev.charCode : ev.keyCode;
-    if (key == 83) {
-      if (is_playing == true) {
-        audio.pause()
-        is_playing = false;
-        $(".btn-play").removeClass("active");
-        $(".btn-pause").addClass("active");
-        $(tracks[index].id).removeClass("fa-spin");
-
-      } else {
-        audio.play();
-        is_playing = true;
-        $(".btn-play").addClass("active");
-        $(".btn-pause").removeClass("active");
-        $(tracks[index].id).addClass("fa-spin");
-      }
-    }
-    else if (key == 65) {
-      loadTrack(index, --index);
-      if (is_playing == true) {
-        audio.play();
-      }
-    }
-    else if (key == 68) {
-      loadTrack(index, ++index);
-      if (is_playing == true) {
-        audio.play();
-      }
-    }
-  }
-
-  $(document).ready(function() {
-    this.onkeypress=keyEvent;
-  });
 
   $(".btn-pause").on("click", function() {
     if (is_playing == false) {
@@ -211,6 +185,22 @@
     if (is_playing == true) {
       audio.play();
     }
+  });
+
+  $(".btn-backward").on("click", function() {
+    if (is_playing == false) {
+      return;
+    }
+    this.blur();
+    audio.currentTime = audio.currentTime - 5;
+  });
+
+  $(".btn-forward").on("click", function() {
+    if (is_playing == false) {
+      return;
+    }
+    this.blur();
+    audio.currentTime = audio.currentTime + 5;
   });
 
 </script>
