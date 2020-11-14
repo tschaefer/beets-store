@@ -56,7 +56,7 @@ def obj_to_dict(obj, expand=False):
                     % (out['album'])
         if expand:
             tracks = [obj_to_dict(track) for track in obj.items()]
-            out['tracks'] = sorted(tracks, key=itemgetter('track'))
+            out['tracks'] = sorted(tracks, key=itemgetter('disc'))
 
     if isinstance(obj, beets.library.Item):
         if request_json():
