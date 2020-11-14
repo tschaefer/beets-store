@@ -211,18 +211,18 @@
   });
 
   $(".btn-backward").on("click", function() {
+    this.blur();
     if (is_playing == false) {
       return;
     }
-    this.blur();
     audio.currentTime = audio.currentTime - 5;
   });
 
   $(".btn-forward").on("click", function() {
+    this.blur();
     if (is_playing == false) {
       return;
     }
-    this.blur();
     audio.currentTime = audio.currentTime + 5;
   });
 
