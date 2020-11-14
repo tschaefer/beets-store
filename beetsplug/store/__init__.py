@@ -6,8 +6,6 @@ import operator
 import re
 import tempfile
 from zipfile import ZipFile, ZIP_DEFLATED
-from operator import itemgetter
-
 import werkzeug
 
 import beets
@@ -38,7 +36,6 @@ def media_url(path):
     rel_path = os.path.relpath(path, beets.config['directory'].get())
     return os.path.join(os.path.sep, 'media', rel_path)
 
-
 def obj_to_dict(obj, expand=False):
     out = dict(obj)
     # remove empty values
@@ -56,7 +53,7 @@ def obj_to_dict(obj, expand=False):
                     % (out['album'])
         if expand:
             tracks = [obj_to_dict(track) for track in obj.items()]
-            out['tracks'] = sorted(tracks, key=itemgetter('disc'))
+            out['tracks'] = sorted(tracks, key = lambda track: (track['disc'], track['track']))
 
     if isinstance(obj, beets.library.Item):
         if request_json():
