@@ -17,25 +17,27 @@
       <table class="table table-hover table-striped table-ellipsis">
         <thead>
           <tr>
-            <th><i class="fa fa-download"></i></th>
+            <th class="hidden-xs"><i class="fa fa-download"></i></th>
             <th>Title</th>
-            <th class="hidden-xs">Duration</th>
             <th>Artist</th>
-            <th class="hidden-xs">Album</th>
+            <th class="hidden-xs">Duration</th>
+            <th>Album</th>
           </tr>
         </thead>
         <tbody>
           {% for track in tracks %}
           <tr>
-            <td>
+            <td class="hidden-xs">
               <a href="{{ url_for('get_track_file', track_id=track.id) }}">
                 <i class="fa fa-download"></i>
               </a>
             </td>
             <td>{{ track.title }}</td>
+            <td>
+              {{ track.artist }}
+            </td>
             <td class="hidden-xs">{{ track.length|duration }}</td>
-            <td>{{ track.artist }}</td>
-            <td class="hidden-xs">
+            <td>
               <a href="{{ url_for('get_album', album_id=track.album_id) }}">
                 {{ track.album }}
               </a>
