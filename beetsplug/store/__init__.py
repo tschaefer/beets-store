@@ -123,6 +123,7 @@ def get_tracks():
     if flask.request.method == 'POST':
         query = u"title::^%s" % (flask.request.form['query'])
     tracks = [obj_to_dict(track) for track in flask.g.lib.items(query=query)]
+    tracks = sorted(tracks, key = lambda track: (track['album'], track['disc'], track['track']))
     if request_json():
         return flask.jsonify(tracks=tracks)
 
