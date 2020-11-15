@@ -115,17 +115,12 @@
   var audio = $("#audio").get(0);
   var index = 0;
   var tracks = [
-{% for disc in range(album.disctotal) %}
-  {% set disc_loop = loop %}
   {% for track in album.tracks %}
-    {% if track.disc == disc_loop.index %}
-      {
-        "file": {{ track.path|tojson|safe }},
-        "id": "#track-{{ track.id }}",
-      },
-    {% endif %}
+    {
+      "file": {{ track.path|tojson|safe }},
+      "id": "#track-{{ track.id }}",
+    },
   {% endfor %}
-{% endfor %}
   ];
   var track_num = tracks.length;
   var is_playing = false;
