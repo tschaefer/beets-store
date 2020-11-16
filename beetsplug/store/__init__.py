@@ -5,6 +5,7 @@ import uuid
 import operator
 import re
 import tempfile
+from time import time
 from zipfile import ZipFile, ZIP_DEFLATED
 import werkzeug
 
@@ -36,10 +37,9 @@ def media_url(path):
     rel_path = os.path.relpath(path, beets.config['directory'].get())
     return os.path.join(os.path.sep, 'media', rel_path)
 
+
 def obj_to_dict(obj, expand=False):
     out = dict(obj)
-    # remove empty values
-    # out = {k: v for k, v in out.items() if v}
 
     if isinstance(obj, beets.library.Album):
         if 'artpath' not in out:
@@ -82,10 +82,7 @@ def duration_filter(timestamp):
 @app.before_request
 def before_request():
     flask.g.lib = app.config['lib']
-    if 'zipdir' in app.config.keys():
-        flask.g.zipdir = app.config['zipdir']
-    else:
-        flask.g.zipdir = tempfile.gettempdir()
+    flask.g.zipdir = app.config['zipdir']
 
 
 @app.errorhandler(405)
@@ -167,20 +164,22 @@ def get_album_file(album_id):
     if not album:
         flask.abort(404)
     tracks = [beets.util.syspath(track.path) for track in album.items()]
-    zfile = os.path.join(flask.g.zipdir, str(uuid.uuid4()))
+    zfile = os.path.join(flask.g.zipdir, "%d-%d" % (album.id, int(album.added)))
 
-    @flask.after_this_request
-    def cleanup(response):
-        os.remove(zfile)
-        return response
+    if os.path.exists(zfile):
+        if (int(time()) - int(os.stat(zfile).st_ctime)) >= 17280:
+            os.remove(zfile)
 
-    with ZipFile(zfile, 'w', ZIP_DEFLATED) as z:
-        if album.artpath:
-            artpath = beets.util.syspath(album.artpath)
-            z.write(artpath, os.path.basename(artpath).decode('utf-8'))
-        for track in tracks:
-            z.write(track.decode('utf-8'), os.path.basename(track).decode('utf-8'))
+    if not os.path.exists(zfile):
+        with ZipFile(zfile, 'w', ZIP_DEFLATED) as z:
+            if album.artpath:
+                artpath = beets.util.syspath(album.artpath)
+                z.write(artpath, os.path.basename(artpath).decode('utf-8'))
+            for track in tracks:
+                z.write(track.decode('utf-8'), os.path.basename(track).decode('utf-8'))
+
     filename = "%s - %s.zip" % (album.albumartist, album.album)
+
     response = flask.send_file(zfile, as_attachment=True,
                                attachment_filename=filename)
     response.headers['Content-Length'] = os.path.getsize(zfile)
@@ -234,6 +233,8 @@ class Store(BeetsPlugin):
 
             if 'zipdir' in self.config.keys():
                 app.config['zipdir'] = self.config['zipdir'].get()
+            else:
+                app.config['zipdir'] = tempfile.gettempdir()
             app.config['lib'] = lib
             app.run(host=self.config['host'].get(),
                     port=self.config['port'].get(int),
