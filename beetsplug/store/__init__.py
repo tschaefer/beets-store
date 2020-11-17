@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import os
-import uuid
-import operator
-import re
 import tempfile
 import werkzeug
-from time import time
-from zipfile import ZipFile, ZIP_DEFLATED
+import time
+import zipfile
 
 import beets
 from beets.plugins import BeetsPlugin
@@ -17,54 +14,10 @@ import flask
 from flask import Flask, Blueprint
 
 from .lastfm import LastFM
+from .utils import *
 
 
-media = Blueprint('media',
-                  __name__,
-                  static_url_path='/media',
-                  static_folder=beets.config['directory'].get())
 app = Flask(__name__)
-app.register_blueprint(media)
-
-
-def request_json():
-    best = flask.request.accept_mimetypes \
-        .best_match(['application/json', 'text/html'])
-    return best == 'application/json' and \
-        flask.request.accept_mimetypes[best] > \
-        flask.request.accept_mimetypes['text/html']
-
-
-def media_url(path):
-    rel_path = os.path.relpath(path, beets.config['directory'].get())
-    return os.path.join(os.path.sep, 'media', rel_path)
-
-
-def obj_to_dict(obj, expand=False):
-    out = dict(obj)
-
-    if isinstance(obj, beets.library.Album):
-        if 'artpath' not in out:
-            out['artpath'] = None
-
-        if out['artpath'] is not None and os.path.exists(out['artpath']):
-            out['artpath'] = media_url(
-                beets.util.syspath(obj.artpath.decode('utf-8')))
-        else:
-            out['artpath'] = 'holder.js/500x500/gray/auto/text:%s/' \
-                    % (out['album'])
-        if expand:
-            tracks = [obj_to_dict(track) for track in obj.items()]
-            out['tracks'] = sorted(tracks, key = lambda track: (track['disc'], track['track']))
-
-    if isinstance(obj, beets.library.Item):
-        if request_json():
-            del out['path']
-        else:
-            out['path'] = media_url(
-                beets.util.syspath(out['path'].decode('utf-8')))
-
-    return out
 
 
 @app.template_filter('duration')
@@ -92,12 +45,12 @@ def before_request():
 @app.errorhandler(404)
 def page_not_found(e):
     if isinstance(e, werkzeug.exceptions.NotFound):
-        if request_json():
+        if request_is_json():
             error = "Oops! The Page you requested was not found!"
             return flask.jsonify(error=error), 404
         return flask.render_template('http_error.html', error=404), 404
     if isinstance(e, werkzeug.exceptions.MethodNotAllowed):
-        if request_json():
+        if request_is_json():
             error = "Oops! The requested method is not allowed!"
             return flask.jsonify(error=error), 405
         return flask.render_template('http_error.html', error=405), 405
@@ -122,9 +75,9 @@ def get_tracks():
     query = None
     if flask.request.method == 'POST':
         query = u"title::^%s" % (flask.request.form['query'])
-    tracks = [obj_to_dict(track) for track in flask.g.lib.items(query=query)]
+    tracks = [translate_library(track) for track in flask.g.lib.items(query=query)]
     tracks = sorted(tracks, key = lambda track: (track['album'], track['disc'], track['track']))
-    if request_json():
+    if request_is_json():
         return flask.jsonify(tracks=tracks)
 
     return flask.render_template('tracks.html', tracks=tracks)
@@ -145,7 +98,7 @@ def get_artists():
 
     artists = []
     for artist in artist_list:
-        albums = [obj_to_dict(album) for album in flask.g.lib.albums(
+        albums = [translate_library(album) for album in flask.g.lib.albums(
                   query="albumartist:%s" % (artist))]
         entry = {
             'artist': artist,
@@ -153,9 +106,9 @@ def get_artists():
         }
         artists.append(entry)
 
-    artists = sorted(artists, key=operator.itemgetter('artist'))
+    artists = sorted(artists, key = lambda artist: (artist['artist']))
 
-    if request_json():
+    if request_is_json():
         return flask.jsonify(artists=artists)
 
     return flask.render_template('artists.html', artists=artists)
@@ -170,11 +123,11 @@ def get_album_file(album_id):
     zfile = os.path.join(flask.g.zipdir, "%d-%d" % (album.id, int(album.added)))
 
     if os.path.exists(zfile):
-        if (int(time()) - int(os.stat(zfile).st_ctime)) >= 17280:
+        if (int(time.time()) - int(os.stat(zfile).st_ctime)) >= 17280:
             os.remove(zfile)
 
     if not os.path.exists(zfile):
-        with ZipFile(zfile, 'w', ZIP_DEFLATED) as z:
+        with zipfile.ZipFile(zfile, 'w', zipfile.ZIP_DEFLATED) as z:
             if album.artpath:
                 artpath = beets.util.syspath(album.artpath)
                 z.write(artpath, os.path.basename(artpath).decode('utf-8'))
@@ -195,11 +148,12 @@ def get_album(album_id):
     album = flask.g.lib.get_album(album_id)
     if not album:
         flask.abort(404)
-    album = obj_to_dict(album, expand=True)
-    if request_json():
+    album = translate_library(album, expand=True)
+    if request_is_json():
         return flask.jsonify(album=album)
 
     return flask.render_template('album.html', album=album)
+
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/albums/', methods=['GET', 'POST'])
@@ -207,12 +161,14 @@ def get_albums():
     query = None
     if flask.request.method == 'POST':
         query = u"album::^%s" % (flask.request.form['query'])
-    albums = [obj_to_dict(album) for album in flask.g.lib.albums(query=query)]
-    albums = sorted(albums, key=operator.itemgetter('album'))
-    if request_json():
+    albums = [translate_library(album) for album in flask.g.lib.albums(query=query)]
+    albums = sorted(albums, key = lambda album: (album['album']))
+
+    if request_is_json():
         return flask.jsonify(albums=albums)
 
     return flask.render_template('albums.html', albums=albums)
+
 
 @app.route('/lastfm/', methods=['GET', 'POST'])
 def lastfm():
@@ -269,25 +225,47 @@ class Store(BeetsPlugin):
             'port': 8080,
         })
 
+    def parse_args(self, args):
+        args = beets.ui.decargs(args)
+        if args:
+            self.config['host'] = args.pop(0)
+        if args:
+            self.config['port'] = int(args.pop(0))
+
+
+    def app_config(self, lib):
+        if 'zipdir' in self.config.keys():
+            app.config['zipdir'] = self.config['zipdir'].get()
+        else:
+            app.config['zipdir'] = tempfile.gettempdir()
+        app.config['lastfm'] = self.config['lastfm'].get()
+        app.config['lib'] = lib
+
+
+    def app_blueprint(self):
+        media = Blueprint(
+            'media',
+            __name__,
+            static_url_path='/media',
+            static_folder=beets.config['directory'].get()
+        )
+        app.register_blueprint(media)
+
+
+    def func(self, lib, opts, args):
+        self.parse_args(args)
+        self.app_config(lib)
+        self.app_blueprint()
+
+        app.run(
+            host=self.config['host'].get(),
+            port=self.config['port'].get(int),
+            threaded=True
+        )
+
+
     def commands(self):
         cmd = Subcommand('store', help='start the Store web interface')
 
-        def func(lib, opts, args):
-            args = beets.ui.decargs(args)
-            if args:
-                self.config['host'] = args.pop(0)
-            if args:
-                self.config['port'] = int(args.pop(0))
-
-            if 'zipdir' in self.config.keys():
-                app.config['zipdir'] = self.config['zipdir'].get()
-            else:
-                app.config['zipdir'] = tempfile.gettempdir()
-            app.config['lastfm'] = self.config['lastfm'].get()
-            app.config['lib'] = lib
-            app.run(host=self.config['host'].get(),
-                    port=self.config['port'].get(int),
-                    debug=True, threaded=True)
-
-        cmd.func = func
+        cmd.func = self.func
         return [cmd]
