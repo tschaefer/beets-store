@@ -5,9 +5,9 @@ import uuid
 import operator
 import re
 import tempfile
+import werkzeug
 from time import time
 from zipfile import ZipFile, ZIP_DEFLATED
-import werkzeug
 
 import beets
 from beets.plugins import BeetsPlugin
@@ -15,6 +15,8 @@ from beets.ui import Subcommand
 
 import flask
 from flask import Flask, Blueprint
+
+from .lastfm import LastFM
 
 
 media = Blueprint('media',
@@ -83,6 +85,7 @@ def duration_filter(timestamp):
 def before_request():
     flask.g.lib = app.config['lib']
     flask.g.zipdir = app.config['zipdir']
+    flask.g.lastfm = app.config['lastfm']
 
 
 @app.errorhandler(405)
@@ -198,7 +201,6 @@ def get_album(album_id):
 
     return flask.render_template('album.html', album=album)
 
-
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/albums/', methods=['GET', 'POST'])
 def get_albums():
@@ -211,6 +213,52 @@ def get_albums():
         return flask.jsonify(albums=albums)
 
     return flask.render_template('albums.html', albums=albums)
+
+@app.route('/lastfm/', methods=['GET', 'POST'])
+def lastfm():
+    api_key = flask.g.lastfm.get('api_key')
+    secret_key = flask.g.lastfm.get('secret_key')
+
+    # ajax call to scrobble
+    if flask.request.method == 'POST':
+        method = flask.request.form.get('method')
+        track = flask.request.form.get('track')[7:]
+        session = flask.request.cookies.get('lastfm')
+
+        if not session:
+            return ''
+
+        item = flask.g.lib.get_item(track)
+
+        lastfm = LastFM(api_key, secret_key, logger=app.logger)
+        if method == 'now_playing':
+            lastfm.now_playing(item.title, item.artist, session)
+        elif method == 'scrobble':
+            lastfm.scrobble(item.title, item.artist, session)
+
+        return ''
+
+    # already access allowed redirect to albums
+    if 'lastfm' in flask.request.cookies:
+        return flask.redirect(flask.url_for('get_albums'))
+
+    # callback from LastFM after user auth
+    if 'token' in flask.request.args:
+        auth_token = flask.request.args.get('token')
+
+        lastfm = LastFM(api_key, secret_key, logger=app.logger)
+        session = lastfm.session(auth_token)
+
+        response = flask.make_response(flask.redirect(flask.url_for('get_albums')))
+        response.set_cookie('lastfm', session, samesite='Strict')
+
+        return response
+
+    # redirect to LastFM for user auth
+    lastfm = LastFM(api_key, secret_key, logger=app.logger)
+    url = lastfm.auth_url(flask.request.url)
+
+    return flask.redirect(url)
 
 
 class Store(BeetsPlugin):
@@ -235,6 +283,7 @@ class Store(BeetsPlugin):
                 app.config['zipdir'] = self.config['zipdir'].get()
             else:
                 app.config['zipdir'] = tempfile.gettempdir()
+            app.config['lastfm'] = self.config['lastfm'].get()
             app.config['lib'] = lib
             app.run(host=self.config['host'].get(),
                     port=self.config['port'].get(int),

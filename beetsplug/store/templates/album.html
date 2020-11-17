@@ -112,6 +112,34 @@
 
 {% block script %}
 <script type="text/javascript">
+
+  class LastFM {
+    constructor(track_id) {
+      this.track_id = track_id
+    }
+
+    _sendRequest(method ) {
+      let data = new FormData();
+
+      data.append('method', method)
+      data.append('track', this.track_id)
+
+      let xhr = new XMLHttpRequest();
+      xhr.open("POST", "/lastfm/", true);
+
+      return xhr.send(data);
+    }
+
+    scrobble() {
+      return this._sendRequest('scrobble');
+    }
+
+    nowPlaying() {
+      return this._sendRequest('now_playing');
+    }
+  }
+
+  var lastfm = new LastFM(0);
   var audio = $("#audio").get(0);
   var index = 0;
   var tracks = [
@@ -137,9 +165,15 @@
   }
 
   var onEnded = function() {
+    lastfm.track_id = tracks[index].id;
+    lastfm.scrobble()
+
     if((index + 1) < track_num) {
       loadTrack(index, ++index);
       audio.play();
+
+      lastfm.track_id = tracks[index].id;
+      lastfm.nowPlaying()
     } else {
       audio.pause();
       is_playing = false;
@@ -175,14 +209,20 @@
     audio.play();
     is_playing = true;
     $(tracks[index].id).addClass("fa-spin");
+
+    lastfm.track_id = tracks[index].id;
+    lastfm.nowPlaying();
   });
 
   $(".btn-next").on("click", function() {
     $(".btn-next").blur();
     if ((index + 1) < track_num) {
       loadTrack(index, ++index);
-      if (is_playing  == true) {
+      if (is_playing == true) {
         audio.play();
+    
+        lastfm.track_id = tracks[index].id;
+        lastfm.nowPlaying();
       }
     }
   });
@@ -193,6 +233,9 @@
       loadTrack(index, --index);
       if (is_playing == true) {
         audio.play();
+
+        lastfm.track_id = tracks[index].id;
+        lastfm.nowPlaying();
       }
     }
   });
@@ -202,6 +245,9 @@
     loadTrack(index, index=(this.value - 1));
     if (is_playing == true) {
       audio.play();
+
+      lastfm.track_id = tracks[index].id;
+      lastfm.nowPlaying();
     }
   });
 
