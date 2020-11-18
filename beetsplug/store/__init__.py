@@ -191,6 +191,8 @@ def lastfm():
     api_key = flask.g.lastfm.get("api_key")
     secret_key = flask.g.lastfm.get("secret_key")
 
+    lastfm = LastFM(api_key, secret_key, app.logger)
+
     # ajax call to scrobble
     if flask.request.method == "POST":
         method = flask.request.form.get("method")
@@ -202,7 +204,6 @@ def lastfm():
 
         item = flask.g.lib.get_item(track)
 
-        lastfm = LastFM(api_key, secret_key, logger=app.logger)
         if method == "now_playing":
             lastfm.now_playing(item.title, item.artist, session)
         elif method == "scrobble":
@@ -218,7 +219,6 @@ def lastfm():
     if "token" in flask.request.args:
         auth_token = flask.request.args.get("token")
 
-        lastfm = LastFM(api_key, secret_key, logger=app.logger)
         session = lastfm.session(auth_token)
 
         response = flask.make_response(
@@ -229,7 +229,6 @@ def lastfm():
         return response
 
     # redirect to LastFM for user auth
-    lastfm = LastFM(api_key, secret_key, logger=app.logger)
     url = lastfm.auth_url(flask.request.url)
 
     return flask.redirect(url)
