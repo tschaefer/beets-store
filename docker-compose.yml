@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  beets_redis:
+    container_name: beets_redis
+    image: docker.io/library/redis:7
+    restart: unless-stopped
+
+  beets_store:
+    container_name: beets_store
+    image: ghcr.io/tschaefer/beets-store:develop
+    depends_on:
+      - beets_redis
+    ports:
+      - 3000:3000
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "-S", "--max-time", "2", "http://${BEETS_BIND_IP}:${BEETS_BIND_PORT}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    volumes:
+      # - ${BEETS_VOLUME}/config/beets.yml:/opt/beets/config/beets.yml
+      # - ${BEETS_VOLUME}/db:/opt/beets/db
+      - ${BEETS_MUSIC_VOLUME}:/opt/beets/media/music
+    restart: unless-stopped

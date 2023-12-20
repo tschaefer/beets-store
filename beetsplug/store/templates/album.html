@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block style %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/store.album.css') }}">
+{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-lg-3 col-md-4 col-sm-5 col-xs-12 album">
+      <div class="alert alert-info alert-hide" role="alert" id="alert-download">
+        <button type="button" class="close" id="alert-close">
+          <span>&times;</span>
+        </button>
+        Album download ready in a few moments.
+      </div>
+      <div class="thumbnail thumbnail-relative">
+        <img src="{{ album.artpath }}" class="img-responsive">
+        <div class="caption caption-overlay">
+          <strong>{{ album.album }}</strong>
+          <small class="text-muted">{{ album.year }}</small>
+          <br>
+          <span class="text-muted">{{ album.albumartist }}</span>
+          <span class="pull-right">
+            <button type="button" class="btn btn-link btn-xs" id="btn-get-album">
+              <span class="fa fa-download"></span>
+            </button>
+          </span>
+        </div>
+      </div>
+      <div class="audio-controls">
+        <audio id="audio"></audio>
+        <button type="button" class="btn btn-default btn-sm btn-prev">
+          <span class="fa fa-step-backward"></span>
+        </button>
+        <button type="button" class="btn btn-default btn-sm btn-backward">
+          <span class="fa fa-backward"></span>
+        </button>
+        <button type="button" class="btn btn-default btn-sm btn-pause">
+          <span class="fa fa-pause"></span>
+        </button>
+        <button type="button" class="btn btn-default btn-sm btn-play">
+          <span class="fa fa-play"></span>
+        </button>
+        <button type="button" class="btn btn-default btn-sm btn-forward">
+          <span class="fa fa-forward"></span>
+        </button>
+        <button type="button" class="btn btn-default btn-sm btn-next">
+          <span class="fa fa-step-forward"></span>
+        </button>
+        <i id="lastfm" class="fa fa-lastfm" aria-hidden="true" style="display: none; margin-left: 5px;"></i>
+      </div>
+    </div>
+    <div class="col-lg-9 col-md-8 col-sm-7 col-xs-12">
+      {% for disc in range(album.disctotal) %}
+          {% set disc_loop = loop %}
+          <p><strong>Disc: {{ loop.index }}</strong></p>
+          <table class="table table-hover table-striped table-ellipsis">
+            <thead>
+              <tr>
+                <th><i class="fa fa-eject"></i></th>
+                <th>Title</th>
+                <th>Artist</th>
+                <th class="hidden-xs">Duration</th>
+                <th class="hidden-xs"><i class="fa fa-download"></i></th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for track in album.tracks %}
+              {% if track.disc == disc_loop.index %}
+              <tr>
+                <td>
+                  <button class="btn btn-default btn-xs btn-eject" value="{{ loop.index }}">
+                    <span class="fa fa-eject"></span>
+                  </button>
+              </td>
+                <td>
+                  {{ track.track }}. {{ track.title }}
+                  <span id="track-{{ track.id }}"></span>
+                </td>
+                <td>
+                  {{ track.artist }}
+                </td>
+                <td class="hidden-xs">
+                  {{ track.length|duration }}
+                </td>
+                <td class="hidden-xs">
+                    <a href="{{ track.path }}">
+                    <i class="fa fa-download"></i>
+                  </a>
+                </td>
+              </tr>
+              {% endif %}
+            {% endfor %}
+            </tbody>
+          </table>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}
+
+{% block script %}
+<script type="text/javascript">
+  var tracks = [
+  {% for track in album.tracks %}
+    {
+      "file": {{ track.path|tojson|safe }},
+      "id": "#track-{{ track.id }}",
+    },
+  {% endfor %}
+  ];
+
+  var album = {
+    "id": {{ album.id }},
+    "album": {{ album.album|tojson|safe }},
+    "albumartist": {{ album.albumartist|tojson|safe }},
+  };
+</script>
+<script src="{{ url_for('static', filename='js/store.album.js') }}"></script>
+{% endblock %}

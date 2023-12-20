@@ -1,0 +1,13 @@
+directory: /opt/beets/media
+library: /opt/beets/db/beets.db
+import:
+    write: no
+    copy: no
+    move: no
+    resume: no
+    autotag: no
+plugins: store fetchart
+fetchart:
+    auto: no
+store:
+    zipdir: /opt/beets/media/store

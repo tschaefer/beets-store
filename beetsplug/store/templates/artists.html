@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block navbar_form %}
+  <form class="navbar-form navbar-right hidden-xs" method="post" role="search">
+    <div class="form-group">
+      <input type="text" name="query" class="form-control input-sm">
+    </div>
+    <button type="submit" class="btn btn-default btn-sm">
+      Search
+    </button>
+  </form>
+{% endblock %}
+
+{% block style %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/store.artists.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/store.artists.dark.css') }}">
+{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-lg-2 col-md-3 col-sm-4 sidebar">
+      <ul class="nav nav-sidebar">
+      {% for artist in artists %}
+        <li>
+          <form method="post">
+          <button type="submit" class="btn btn-link" name="query" value="{{ artist.artist }}">
+            {{ artist.artist }}
+          </button>
+          </form>
+        </li>
+      {% endfor %}
+      </ul>
+    </div>
+    <div class="col-lg-10 col-lg-offset-2 col-md-9 col-md-offset-3 col-sm-8 col-sm-offset-4 col-xs-12 main">
+    {% for artist in artists %}
+    <div class="row">
+      <div class="col-lg-12">
+        <p>
+          <strong>
+          {{ artist.artist }}
+          </strong>
+          <span class="text-muted">
+            {{ artist.albums|length }} Albums
+          </span>
+        </p>
+      </div>
+    </div>
+    <div class="row">
+    {% for album in artist.albums %}
+      <div class="col-lg-3 col-md-4 col-sm-6 col-xs-12">
+      <div class="thumbnail thumbnail-relative">
+        <a href="{{ url_for('get_album', album_id=album.id) }}">
+          <img src="{{ album.artpath }}" class="img-responsive">
+        </a>
+        <div class="caption caption-overlay">
+          <strong>{{ album.album }}</strong></br>
+          <span class="text-muted">{{ album.albumartist }}</span>
+        </div>
+      </div>
+     </div>
+    {% endfor %}
+    </div>
+    {% endfor %}
+    </div>
+  </div>
+{% endblock %}
