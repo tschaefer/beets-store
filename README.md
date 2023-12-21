@@ -12,6 +12,24 @@ A plugin for the music geek's media organizer.
 * Download the music files and entire albums (A zipped directory with the music
   files and the album cover image.)
 
+## Screenshots
+
+### Albums overview
+
+![Albums view](.screenshots/beets-view-albums.png "Albums view")
+
+### Artists overview
+
+![Artists view](.screenshots/beets-view-artists.png "Artists view")
+
+### Tracks overview
+
+![Tracks view](.screenshots/beets-view-tracks.png "Tracks view")
+
+### Album detailview
+
+![Album view](.screenshots/beets-view-album.png "Album view")
+
 ## Installation
 
 Install required services.
