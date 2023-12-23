@@ -1,7 +1,14 @@
 #!/bin/bash
 
+# set -x
+
 PATH=/opt/beets/.local/pipx/bin:$PATH
 BEETS_CONFIG=/opt/beets/config/beets.yml
+BEETS_DB=/opt/beets/db/beets.db
+BEETS_STATE=/opt/beets/beets.state
+BEETS_IMPORTS=/opt/beets/beets.imports
+BEETS_NEW_IMPORTS=/opt/beets/beets.new_imports
+BEETS_MUSIC=/opt/beets/media/music
 
 if [[ ! -f $BEETS_CONFIG ]]; then
     echo "No config file found. Shutting down." >&2
@@ -11,11 +18,50 @@ fi
 BEETS_REDIS_URL=${BEETS_REDIS_URL:=redis://beets_redis:6379}
 export BEETS_REDIS_URL
 
-rq worker --url $BEETS_REDIS_URL &
-if [[ -f /opt/beets/beets.db ]]; then
-    beet --config $BEETS_CONFIG update
+if [[ $BEETS_FORCE_IMPORT == "true" ]]; then
+    echo "Forcing import ..."
+    rm -f $BEETS_DB
+    beet --config $BEETS_CONFIG import $BEETS_MUSIC
+    find $BEETS_MUSIC -type f -a -name "*.mp3" -exec dirname '{}' \; \
+        | uniq > $BEETS_IMPORTS
+    echo "$(date +%FT%T)" > $BEETS_STATE
+    echo "done."
 else
-    beet --config $BEETS_CONFIG import /opt/beets/media/music
+    if [[ ! -f $BEETS_DB ]]; then
+        echo "Initial import ..."
+        beet --config $BEETS_CONFIG import $BEETS_MUSIC
+
+        find $BEETS_MUSIC -type f -a -name "*.mp3" -exec dirname '{}' \; \
+            | uniq > $BEETS_IMPORTS
+        echo "$(date +%FT%T)" > $BEETS_STATE
+        echo "done."
+    else
+        rm -f $BEETS_NEW_IMPORTS
+        TIMESTAMP=$(cat $BEETS_STATE)
+        find $BEETS_MUSIC -type f -a -name "*.mp3" -a -newermt $TIMESTAMP -exec dirname '{}' \; \
+            | uniq > $BEETS_NEW_IMPORTS
+
+        if [[ -s $BEETS_NEW_IMPORTS ]]; then
+            echo "New files found. Importing ..."
+            diff -u $BEETS_IMPORTS $BEETS_NEW_IMPORTS \
+                | grep '^+/' \
+                | sed 's/^\+//g' \
+                | xargs -I {} beet --config $BEETS_CONFIG import {}
+            find $BEETS_MUSIC -type f -a -name "*.mp3" -exec dirname '{}' \; \
+                | uniq > $BEETS_IMPORTS
+            echo "$(date +%FT%T)" > $BEETS_STATE
+            echo "done."
+        fi
+
+        echo "Updating ..."
+        beet --config $BEETS_CONFIG update
+        echo "done."
+    fi
 fi
+echo "Fetching album art ..."
 beet --config $BEETS_CONFIG fetchart
+echo "done."
+
+echo "Starting beets ..."
+rq worker --url $BEETS_REDIS_URL &
 beet --config $BEETS_CONFIG store --wsgi ${BEETS_BIND_IP:=0.0.0.0} ${BEETS_BIND_PORT:=3000}
