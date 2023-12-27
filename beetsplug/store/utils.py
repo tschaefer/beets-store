@@ -48,9 +48,12 @@ def decode(obj, kind='album'):
                 beets.util.syspath(dic["artpath"].decode("utf-8"))
             )
         else:
-            dic["artpath"] = "holder.js/500x500/gray/auto/text:%s/" % (
-                dic["album"]
-            )
+            if request_is_json():
+                del dic["artpath"]
+            else:
+                dic["artpath"] = "holder.js/500x500/gray/auto/text:%s/" % (
+                    dic["album"]
+                )
 
         return dic
 
@@ -58,12 +61,9 @@ def decode(obj, kind='album'):
         if 'artpath' in dic:
             del dic['artpath']
 
-        if request_is_json():
-            del dic["path"]
-        else:
-            dic["path"] = media_url(
-                beets.util.syspath(dic["path"].decode("utf-8"))
-            )
+        dic["path"] = media_url(
+            beets.util.syspath(dic["path"].decode("utf-8"))
+        )
 
         return dic
 
