@@ -4,10 +4,10 @@ function getCookie(cname) {
   var ca = decodedCookie.split(';');
   for(var i = 0; i <ca.length; i++) {
     var c = ca[i];
-    while (c.charAt(0) == ' ') {
+    while (c.charAt(0) === ' ') {
       c = c.substring(1);
     }
-    if (c.indexOf(name) == 0) {
+    if (c.indexOf(name) === 0) {
       return c.substring(name.length, c.length);
     }
   }
@@ -16,7 +16,7 @@ function getCookie(cname) {
 
 function checkCookie() {
   var lastfm = getCookie("lastfm");
-  if (lastfm != "") {
+  if (lastfm !== "") {
     document.getElementById("lastfm").style.display = "initial";
   }
   else {
@@ -61,11 +61,11 @@ var is_playing = false;
 
 var loadTrack = function(last_idx, idx) {
   audio.src = tracks[idx].file;
-  if (last_idx != idx) {
+  if (last_idx !== idx) {
     $(tracks[last_idx].id).removeClass("fa fa-circle-o-notch fa-spin");
   }
   $(tracks[idx].id).addClass("fa fa-circle-o-notch");
-  if (is_playing == true) {
+  if (is_playing === true) {
     $(tracks[idx].id).addClass("fa-spin");
   }
 }
@@ -94,7 +94,7 @@ loadTrack(index, index);
 audio.addEventListener('ended', onEnded);
 
 $(".btn-pause").on("click", function() {
-  if (is_playing == false) {
+  if (is_playing === false) {
     return;
   }
   $(".btn-pause").blur();
@@ -106,7 +106,7 @@ $(".btn-pause").on("click", function() {
 });
 
 $(".btn-play").on("click", function() {
-  if (is_playing == true) {
+  if (is_playing === true) {
     return;
   }
   $(".btn-play").blur();
@@ -124,7 +124,7 @@ $(".btn-next").on("click", function() {
   $(".btn-next").blur();
   if ((index + 1) < track_num) {
     loadTrack(index, ++index);
-    if (is_playing == true) {
+    if (is_playing === true) {
       audio.play();
 
       lastfm.track_id = tracks[index].id;
@@ -137,7 +137,7 @@ $(".btn-prev").on("click", function() {
   $(".btn-prev").blur();
   if ((index - 1) > -1) {
     loadTrack(index, --index);
-    if (is_playing == true) {
+    if (is_playing === true) {
       audio.play();
 
       lastfm.track_id = tracks[index].id;
@@ -149,7 +149,7 @@ $(".btn-prev").on("click", function() {
 $(".btn-eject").on("click", function() {
   this.blur();
   loadTrack(index, index=(this.value - 1));
-  if (is_playing == true) {
+  if (is_playing === true) {
     audio.play();
 
     lastfm.track_id = tracks[index].id;
@@ -159,7 +159,7 @@ $(".btn-eject").on("click", function() {
 
 $(".btn-backward").on("click", function() {
   this.blur();
-  if (is_playing == false) {
+  if (is_playing === false) {
     return;
   }
   audio.currentTime = audio.currentTime - 5;
@@ -167,7 +167,7 @@ $(".btn-backward").on("click", function() {
 
 $(".btn-forward").on("click", function() {
   this.blur();
-  if (is_playing == false) {
+  if (is_playing === false) {
     return;
   }
   audio.currentTime = audio.currentTime + 5;
@@ -180,7 +180,7 @@ $("#btn-get-album").on("click", function() {
   xhr.setRequestHeader("Accept", "application/json");
 
   xhr.onload = function() {
-    if (xhr.status == 200) {
+    if (xhr.status === 200) {
       $("#alert-download").addClass("alert-hide");
 
       let data = JSON.parse(xhr.responseText);
@@ -189,7 +189,7 @@ $("#btn-get-album").on("click", function() {
 
       link.click();
     }
-    else if (xhr.status == 204) {
+    else if (xhr.status === 204) {
       $("#alert-download").removeClass("alert-hide");
     }
   };
