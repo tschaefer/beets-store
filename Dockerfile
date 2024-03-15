@@ -1,7 +1,7 @@
 FROM docker.io/bitnami/minideb:latest
 LABEL org.opencontainers.image.source="https://github.com/tschaefer/beets-store"
 
-RUN install_packages pipx curl
+RUN install_packages pipx curl dumb-init
 COPY rootfs /
 
 ARG BUILD_BRANCH=main
@@ -18,4 +18,5 @@ EXPOSE 3000
 USER root
 WORKDIR /opt/beets
 
-ENTRYPOINT ["/opt/beets/entrypoint"]
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+CMD ["bash", "-c", "/opt/beets/bin/beets-setup && exec /opt/beets/bin/beets-start"]
