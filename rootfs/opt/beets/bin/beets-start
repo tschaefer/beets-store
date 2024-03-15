@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# set -x
+
+PATH=/opt/beets/.local/pipx/bin:$PATH
+BEETS_CONFIG=/opt/beets/config/beets.yml
+
+if [[ ! -f $BEETS_CONFIG ]]; then
+    echo "No config file found. Shutting down." >&2
+    exit 1
+fi
+
+BEETS_REDIS_URL=${BEETS_REDIS_URL:=redis://beets_redis:6379}
+export BEETS_REDIS_URL
+
+echo "Starting beets ..."
+rq worker --url $BEETS_REDIS_URL &
+beet --config $BEETS_CONFIG store --wsgi ${BEETS_BIND_IP:=0.0.0.0} ${BEETS_BIND_PORT:=3000}

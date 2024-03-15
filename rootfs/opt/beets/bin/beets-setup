@@ -15,9 +15,6 @@ if [[ ! -f $BEETS_CONFIG ]]; then
     exit 1
 fi
 
-BEETS_REDIS_URL=${BEETS_REDIS_URL:=redis://beets_redis:6379}
-export BEETS_REDIS_URL
-
 if [[ $BEETS_FORCE_IMPORT == "true" ]]; then
     echo "Forcing import ..."
     rm -f $BEETS_DB
@@ -61,7 +58,3 @@ fi
 echo "Fetching album art ..."
 beet --config $BEETS_CONFIG fetchart
 echo "done."
-
-echo "Starting beets ..."
-rq worker --url $BEETS_REDIS_URL &
-beet --config $BEETS_CONFIG store --wsgi ${BEETS_BIND_IP:=0.0.0.0} ${BEETS_BIND_PORT:=3000}
