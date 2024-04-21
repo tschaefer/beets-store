@@ -81,6 +81,7 @@ def force_content_disposition(response):
     response.headers["Content-Disposition"] = disposition.replace(
         "inline", "attachment"
     )
+    response.headers["Cache-Control"] = "max-age=86400, private"
 
     return response
 
