@@ -95,6 +95,78 @@ Start the service.
 
     $ docker compose --env-file docker-compose.env up
 
+## Development
+
+### Prerequisites
+
+* Python >= 3.11
+* Redis (see [Installation](#installation))
+
+### Set up the virtual environment
+
+Clone the repository and create a virtual environment inside the project
+directory.
+
+    $ git clone https://github.com/tschaefer/beets-store
+    $ cd beets-store
+    $ python3 -m venv venv
+    $ source venv/bin/activate
+
+Install the package in editable mode so that code changes take effect
+immediately without reinstalling.
+
+    $ pip install -e .
+
+### Configure a local beets library
+
+Create a minimal beets configuration file, e.g. `venv/store.yml`, pointing
+to your music directory and a local SQLite database.
+
+```yaml
+directory: /path/to/your/music
+library: venv/store.db
+import:
+  write: false
+  copy: false
+  move: false
+  resume: false
+  autotag: false
+plugins: store fetchart
+fetchart:
+  auto: false
+store:
+  host: "127.0.0.1"
+  port: 8080
+  zipdir: /tmp/beets-store/zip
+```
+
+Import your music and fetch cover art.
+
+    $ beet --config venv/store.yml import /path/to/your/music
+    $ beet --config venv/store.yml fetchart
+
+### Run the development server
+
+Start the Redis-backed job queue worker in one terminal.
+
+    $ source venv/bin/activate
+    $ rq worker
+
+Start the Flask development server in a second terminal.
+
+    $ source venv/bin/activate
+    $ FLASK_DEBUG=true beet --config venv/store.yml store
+
+The store is now available at `http://127.0.0.1:8080`.
+
+A `Procfile` can be used with a process manager such as
+[Foreman](https://github.com/ddollar/foreman) to start both processes at once.
+
+```
+queue: rq worker
+store: beet --config venv/store.yml store
+```
+
 ## License
 
 [BSD 3-Clause “New” or “Revised” License](https://choosealicense.com/licenses/bsd-3-clause/)

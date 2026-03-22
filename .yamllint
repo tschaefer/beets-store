@@ -1,0 +1,9 @@
+---
+extends: default
+rules:
+  indentation:
+    indent-sequences: consistent
+  line-length:
+    max: 196
+
+# vim:ft=yaml

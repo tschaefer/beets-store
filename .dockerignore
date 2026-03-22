@@ -1,0 +1,13 @@
+.git
+.gitignore
+.github
+.eslintrc
+.pdm-build
+.screenshots
+venv
+beets-store.log
+tags
+store.yml
+docker-compose.yml
+docker-compose.env
+Dockerfile

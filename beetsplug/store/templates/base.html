@@ -1,67 +1,102 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Beets Store. A plugin for the misc geek's media organizer.">
+  <meta name="description" content="Beets Store. A plugin for the music geek's media organizer.">
   <meta name="author" content="Tobias Schäfer">
-  <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}?v={{ sv }}">
 
   <title>Beets</title>
 
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-3.4.1.min.dark.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/store.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/store.dark.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/font-awesome-4.7.0.min.css') }}">
-
-  {% block style %}{% endblock %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-5.3.3.min.css') }}?v={{ sv }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/font-awesome-6.7.2.min.css') }}?v={{ sv }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/store.css') }}?v={{ sv }}">
 
 </head>
 
-<body>
-  <nav class="navbar navbar-default navbar-fixed-top">
+<body hx-boost="true" hx-select="#page-content" hx-target="#page-content" hx-select-oob="#navbar-form" hx-push-url="true" hx-swap="innerHTML">
+  <div id="nav-progress"></div>
+  <nav class="navbar navbar-expand-md fixed-top bg-body-tertiary">
     <div class="container-fluid">
-      <div class="navbar-header">
-        <a class="navbar-brand" href="#">
-          <small><i class="fa fa-heart" aria-hidden="true"></i> Beets Store.</small>
-        </a>
-        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-          <span class="sr-only">Toggle navigation</span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-        </button>
-      </div>
-      <div id="navbar" class="navbar-collapse collapse">
-        <ul class="nav navbar-nav">
-          <li>
-            <a href={{ url_for('.get_albums') }}>Albums</a>
+      <a class="navbar-brand" href="#">
+        <small><i id="navbar-heart" class="fa-solid fa-heart" aria-hidden="true"></i> Beets Store.</small>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div id="navbar" class="collapse navbar-collapse">
+        <ul class="nav navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('.get_albums') }}">Albums</a>
           </li>
-          <li>
-            <a href="{{ url_for('.get_artists') }}">Artists</a>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('.get_artists') }}">Artists</a>
           </li>
-          <li>
-            <a href="{{ url_for('.get_tracks') }}">Tracks</a>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('.get_tracks') }}">Tracks</a>
           </li>
           {% if lastfm %}
-          <li>
-            <a href="{{ url_for('.lastfm') }}">LastFM</a>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('.lastfm') }}" hx-boost="false">LastFM</a>
           </li>
           {% endif %}
         </ul>
-        {% block navbar_form %}{% endblock %}
+        <span id="navbar-form">{% block navbar_form %}{% endblock %}</span>
       </div>
     </div>
   </nav>
 
   <div class="container-fluid">
-    {% block content %}{% endblock %}
+    <div id="page-content">
+      {% block content %}{% endblock %}
+    </div>
   </div>
 
-  <script src="{{ url_for('static', filename='js/jquery-3.5.1.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/bootstrap-3.4.1.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/holder-2.7.1.min.js') }}"></script>
-  {% block script %}{% endblock %}
+  <div id="player-bar" class="fixed-bottom bg-body-tertiary">
+    <audio id="audio"></audio>
+    <div id="player-progress">
+      <div id="player-progress-fill"></div>
+    </div>
+    <div class="d-flex align-items-center gap-2 py-2 px-3">
+      <div id="player-hint" class="align-items-center gap-2" style="display: flex;">
+        <img src="{{ url_for('static', filename='img/404.jpg') }}" width="45" height="45" class="rounded-1 flex-shrink-0" style="object-fit: cover;">
+        <div class="text-truncate small" style="max-width: 200px;">
+          <div class="fw-semibold text-truncate">Wh-what did you do?</div>
+          <div class="text-muted text-truncate">Rick'n'Morty</div>
+        </div>
+      </div>
+      <a id="player-art-link" href="#" class="align-items-center gap-2 text-decoration-none" style="display: none;">
+        <img id="player-art" src="" width="45" height="45" class="rounded-1 flex-shrink-0">
+        <div class="text-truncate small" style="max-width: 200px;">
+          <div id="player-track" class="fw-semibold text-truncate"></div>
+          <div id="player-album" class="text-muted text-truncate"></div>
+        </div>
+      </a>
+      <div id="waveform" class="flex-grow-1 d-none d-md-block"></div>
+      <div class="d-flex gap-1 ms-auto flex-shrink-0 align-items-center">
+        <i id="player-lastfm" class="fa-brands fa-lastfm me-1" aria-hidden="true" style="display: none;"></i>
+        <button type="button" class="btn btn-secondary btn-sm btn-prev">
+          <span class="fa-solid fa-backward-step"></span>
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm btn-playpause">
+          <span class="fa-solid fa-play"></span>
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm btn-next">
+          <span class="fa-solid fa-forward-step"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/bootstrap-5.3.3.bundle.min.js') }}?v={{ sv }}"></script>
+  <script src="{{ url_for('static', filename='js/htmx.min.js') }}?v={{ sv }}"></script>
+  <script src="{{ url_for('static', filename='js/store.player.js') }}?v={{ sv }}"></script>
+  <script src="{{ url_for('static', filename='js/store.htmx.js') }}?v={{ sv }}"></script>
+
+  <div id="page-scripts" style="display: none;">
+    {% block script %}{% endblock %}
+  </div>
+
 </body>
 </html>
