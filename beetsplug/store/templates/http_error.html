@@ -13,8 +13,13 @@
     <img src="{{ url_for('static', filename='img/404.jpg') }}">
     {% if error == 404 %}
       <h1>I Want That Mulan McNugget Sauce, Morty!</h1>
+      <small class="text-muted">404 - Not Found</small>
     {% elif error == 405 %}
       <h1>Sometimes Science Is More Art Than Science.</h1>
+      <small class="text-muted">405 - Method Not Allowed</small>
+    {% elif error == 400 %}
+      <h1>Wubba Lubba Dub Dub! (Bad Request)</h1>
+      <small class="text-muted">400 - Bad Request</small>
     {% endif %}
     </div>
   </div>

@@ -52,21 +52,21 @@ def page_not_found(e):
         if not request_is_json():
             return flask.render_template("http_error.html", error=404), 404
 
-        error = "I Want That Mulan McNugget Sauce, Morty! (404)"
+        error = "I Want That Mulan McNugget Sauce, Morty!"
         return flask.jsonify(error=error), 404
 
     if isinstance(e, werkzeug.exceptions.MethodNotAllowed):
         if not request_is_json():
             return flask.render_template("http_error.html", error=405), 405
 
-        error = "Sometimes Science Is More Art Than Science. (405)"
+        error = "Sometimes Science Is More Art Than Science."
         return flask.jsonify(error=error), 405
 
     if isinstance(e, werkzeug.exceptions.BadRequest):
         if not request_is_json():
             return flask.render_template("http_error.html", error=400), 400
 
-        error = "Wubba Lubba Dub Dub! (400)"
+        error = "Wubba Lubba Dub Dub!"
         return flask.jsonify(error=error), 400
 
 
