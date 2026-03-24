@@ -325,7 +325,7 @@
     if (!_playerTracks.length) return;
 
     if (_isPlaying) {
-      audio.pause().catch(function (e) { console.warn('Pause failed:', e); });
+      audio.pause();
     } else {
       audio.play().catch(function (e) { console.warn('Playback failed:', e); });
       sendLastFM('now_playing', _playerTracks[_index].id);
