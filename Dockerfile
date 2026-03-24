@@ -1,17 +1,22 @@
-FROM docker.io/bitnami/minideb:latest
-LABEL org.opencontainers.image.source="https://github.com/tschaefer/beets-store"
+FROM docker.io/library/debian:trixie-slim
 
-RUN install_packages pipx curl dumb-init
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        dumb-init \
+        pipx \
+        python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY rootfs /
+COPY . /build
 
-ARG BUILD_BRANCH=main
+RUN PIPX_HOME=/opt/beets/.local/pipx \
+    PIPX_BIN_DIR=/opt/beets/.local/pipx/bin \
+    pipx install --include-deps /build \
+    && rm -rf /build
 
-RUN bash -c ' \
-    PIPX_HOME=/opt/beets/.local/pipx \
-    PIPX_BIN_DIR=$PIPX_HOME/bin \
-    pipx install --include-deps \
-    https://github.com/tschaefer/beets-store/archive/refs/heads/${BUILD_BRANCH}.zip \
-    '
 VOLUME ["/opt/beets/media/music"]
 EXPOSE 3000
 

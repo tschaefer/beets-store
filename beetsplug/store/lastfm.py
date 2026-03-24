@@ -10,17 +10,21 @@ import flask
 import requests
 
 
-API_ENDPOINT = "http://ws.audioscrobbler.com/2.0/?format=json"
+API_ENDPOINT = "https://ws.audioscrobbler.com/2.0/?format=json"
 API_AUTH = "https://www.last.fm/api/auth?api_key=%s"
 
 
 class LastFM:
+    """Last FM API client for authentication and scrobbling."""
     def __init__(self, api_key, secret_key, logger):
+        """Initialize the LastFM client with API credentials and a logger."""
         self.api_key = api_key
         self.secret_key = secret_key
         self.logger = logger
 
     def send_request(self, method, session_key=None, parameters={}):
+        """Send a request to the Last FM API with the given method and
+        parameters."""
         parameters.update(
             {
                 "api_key": self.api_key,
@@ -48,12 +52,13 @@ class LastFM:
         return response
 
     def sign_request(self, parameters):
+        """Generate an API signature for the given parameters."""
         string = ""
         keys = parameters.keys()
 
         for key in sorted(keys):
             string += key
-            string += parameters[key]
+            string += str(parameters[key])
         string += self.secret_key
 
         encoded = string.encode("utf8")
@@ -63,6 +68,8 @@ class LastFM:
         return signature
 
     def auth_url(self, callback=None):
+        """Generate the URL for Last FM authentication, optionally with a
+        callback."""
         url = API_AUTH % self.api_key
         if callback:
             url = url + "&cb=%s" % callback
@@ -70,6 +77,7 @@ class LastFM:
         return url
 
     def now_playing(self, song, artist, session_key):
+        """Update the currently playing track on Last FM."""
         return self.send_request(
             "track.updateNowPlaying",
             session_key,
@@ -77,6 +85,8 @@ class LastFM:
         )
 
     def scrobble(self, song, artist, session_key):
+        """Scrobble a track to Last FM with a timestamp of 30 seconds ago to
+        ensure it counts as a valid scrobble."""
         return self.send_request(
             "track.scrobble",
             session_key,
@@ -88,10 +98,14 @@ class LastFM:
         )
 
     def session(self, auth_token):
-        response = self.send_request(
-            "auth.getSession", parameters={"token": auth_token}
-        )
-
-        session = response.json()
-
-        return session["session"]["key"]
+        """Exchange an authentication token for a session key."""
+        try:
+            response = self.send_request(
+                "auth.getSession", parameters={"token": auth_token}
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data["session"]["key"]
+        except (requests.RequestException, ValueError, KeyError) as e:
+            self.logger.error("LastFM auth.getSession failed: %s", e)
+            return None

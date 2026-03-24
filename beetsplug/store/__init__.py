@@ -31,13 +31,13 @@ class Store(BeetsPlugin):
 
     def func(self, lib, opts, args):
         self.parse(args)
-        app = App(self.config, lib, beets.config["directory"].get())
+        app = App(self.config, lib, beets.config["directory"].as_filename())
 
         if opts.wsgi:
             listen = "{}:{}".format(
                 self.config["host"].get(), self.config["port"].get(int)
             )
-            return waitress.serve(app.app, listen=listen)
+            return waitress.serve(app.app, listen=listen, threads=16)
 
         app.run()
 
