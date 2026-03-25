@@ -106,14 +106,6 @@
       var albumUrl = `/album/${_playerAlbum.id}/`;
       linkEl.style.display = "flex";
       linkEl.href = albumUrl;
-      linkEl.setAttribute("hx-get", albumUrl);
-      linkEl.setAttribute("hx-target", "#page-content");
-      linkEl.setAttribute("hx-select", "#page-content");
-      linkEl.setAttribute("hx-select-oob", "#navbar-form");
-      linkEl.setAttribute("hx-push-url", "true");
-      linkEl.setAttribute("hx-swap", "innerHTML");
-
-      if (window.htmx) htmx.process(linkEl);
     }
     if (artEl) artEl.src = _playerAlbum._artUrl || "";
     if (trackEl) trackEl.textContent = t ? t.title : "";
@@ -139,7 +131,9 @@
     audio.src = _playerTracks[idx].file;
     progressFill.style.width = "0%";
     updatePlayerDisplay();
-    setTrackMarker(idx + 1);
+    if (_pageAlbum.id === _playerAlbum.id) {
+      setTrackMarker(idx + 1);
+    }
     saveState(idx, pos || 0);
   }
 
@@ -372,6 +366,20 @@
     }
   });
 
+  // Navigate via HTMX at click time so the current player href is always used.
+  document.getElementById("player-art-link").addEventListener("click", (e) => {
+    var href = e.currentTarget.getAttribute("href");
+    if (!href || href === "#") return;
+    e.preventDefault();
+    htmx.ajax("GET", href, {
+      target: "#page-content",
+      swap: "innerHTML",
+      select: "#page-content",
+      selectOOB: "#navbar-form",
+      push: true,
+    });
+  });
+
   // Eject track from the page track list into the player.
   document.addEventListener("click", (e) => {
     var btn = e.target.closest(".btn-eject");
@@ -416,6 +424,22 @@
       if (matchIdx >= 0) setTrackMarker(matchIdx + 1);
     }
   };
+
+  // Listen for htmx page load events to update the track marker in the page
+  // track list.
+  document.body.addEventListener("htmx:afterSettle", (e) => {
+    if (e.detail.target.id !== "page-content") return;
+    if (!_playerTracks.length) return;
+
+    var currentFile = _playerTracks[_index].file;
+    for (var i = 0; i < _pageTracks.length; i++) {
+      if (_pageTracks[i].file === currentFile) {
+        setTrackMarker(i + 1);
+        return;
+      }
+    }
+    setTrackMarker(0);
+  });
 
   // --- Init ---
 
