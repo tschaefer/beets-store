@@ -9,8 +9,6 @@ from beets.ui import Subcommand
 
 from .app import App
 
-import waitress
-
 
 class Store(BeetsPlugin):
     def __init__(self):
@@ -19,6 +17,7 @@ class Store(BeetsPlugin):
             {
                 "host": u"",
                 "port": 8080,
+                "cors_origins": "*",
             }
         )
 
@@ -32,25 +31,10 @@ class Store(BeetsPlugin):
     def func(self, lib, opts, args):
         self.parse(args)
         app = App(self.config, lib, beets.config["directory"].as_filename())
-
-        if opts.wsgi:
-            listen = "{}:{}".format(
-                self.config["host"].get(), self.config["port"].get(int)
-            )
-            return waitress.serve(app.app, listen=listen, threads=16)
-
         app.run()
 
     def commands(self):
         cmd = Subcommand("store", help="start the Store web interface")
-        cmd.parser.add_option(
-            "-w",
-            "--wsgi",
-            dest="wsgi",
-            action="store_true",
-            default=False,
-            help="start the store as a WSGI app",
-        )
 
         cmd.func = self.func
         return [cmd]

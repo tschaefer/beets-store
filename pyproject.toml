@@ -8,11 +8,13 @@ authors = [
 ]
 dependencies = [
     "Flask >= 3.0.0",
+    "flask-socketio >= 5.6.1",
     "beets >= 2.0.0",
     "redis >= 4.1.4",
     "requests >= 2.25.0",
     "rq >= 1.10.1",
-    "waitress >= 2.1.2",
+    "gevent >= 24.2.1",
+    "gevent-websocket >= 0.10.1",
 ]
 license = {text = "BSD"}
 requires-python = ">=3.11"

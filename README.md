@@ -52,6 +52,7 @@ store:
   port: 8080
   zipdir: /tmp/beets/store/zip
   lastfm:
+    cors_origins: "https://music.example.com"
     api_key: API_KEY
     secret_key: SECRET_KEY
 ```
@@ -137,7 +138,7 @@ fetchart:
 store:
   host: "127.0.0.1"
   port: 8080
-  zipdir: /tmp/beets-store/zip
+  zipdir: /path/to/your/music/zip
 ```
 
 Import your music and fetch cover art.

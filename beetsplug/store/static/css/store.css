@@ -123,3 +123,15 @@ body.player-active {
 .album .caption-overlay {
   height: 100%;
 }
+
+.toast-art,
+.toast-art-placeholder {
+  width: 56px;
+  min-height: 56px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.toast-art-placeholder {
+  background-color: #343a40;
+}

@@ -10,10 +10,6 @@
 {% block content %}
   <div class="row">
     <div class="col-lg-3 col-md-4 col-sm-5 col-12 album">
-      <div class="alert alert-info alert-hide" role="alert" id="alert-download">
-        <button type="button" class="btn-close float-end" id="alert-close" aria-label="Close"></button>
-        Album download ready in a few moments.
-      </div>
       <div class="card bg-body-tertiary mb-2">
         <div class="p-1">
           <img src="{{ album.artpath }}" class="img-fluid rounded-1">
@@ -101,5 +97,4 @@
 
   window.loadAlbum(tracks, album);
 </script>
-<script src="{{ url_for('static', filename='js/store.album.js') }}"></script>
 {% endblock %}

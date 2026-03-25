@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Beets store Redis queue module to run 'long' tasks."""
+"""Beets store Redis queue worker."""
 
 import os
 import time
@@ -8,6 +8,8 @@ import zipfile
 
 from rq import Queue, Callback
 from redis import Redis
+
+REDIS_URL = os.getenv('BEETS_REDIS_URL', 'redis://localhost:6379')
 
 
 def bundle(arguments):
@@ -31,24 +33,23 @@ def bundle(arguments):
 
 
 def job_succeeded(job, connection, result, *args, **kwargs):
-    """Publish job success message to Redis channel."""
+    """Publish job success to the Redis channel."""
     connection.publish('rq:job:succeeded', job.id)
 
 
 def job_failed(job, connection, *args, **kwargs):
-    """Publish job failure message to Redis channel."""
+    """Publish job failure to the Redis channel."""
     connection.publish('rq:job:failed', job.id)
 
 
-class Task:
-    """Task class to manage Redis queue for running long tasks."""
+class Worker:
+    """Manages the Redis queue for enqueuing bundle jobs."""
     def __init__(self):
         """Initialize Redis connection and queue."""
-        redis_url = os.getenv('BEETS_REDIS_URL', 'redis://localhost:6379')
-        self.q = Queue(connection=Redis.from_url(redis_url))
+        self.q = Queue(connection=Redis.from_url(REDIS_URL))
 
     def run(self, name='bundle', arguments=None):
-        """Run a task by enqueuing it to the Redis queue."""
+        """Enqueue a job by name."""
         return self.q.enqueue(globals()[name], arguments,
                               on_success=Callback(job_succeeded),
                               on_failure=Callback(job_failed))

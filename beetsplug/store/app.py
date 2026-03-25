@@ -7,18 +7,22 @@ import flask
 import os
 import tempfile
 import time
+import uuid
 import werkzeug
 
 from flask import Flask, Blueprint
+import flask_socketio
+from flask_socketio import SocketIO
 from importlib.metadata import version as pkg_version
 
 from .lastfm import LastFM
+from .dispatcher import Dispatcher
 from .utils import request_is_json, decode, media_url
-from .tasks import Task
 
 
 app = Flask(__name__)
-task = Task()
+ws = SocketIO()
+dispatcher = Dispatcher(app, ws)
 
 
 @app.template_filter("duration")
@@ -172,17 +176,31 @@ def get_album_file(album_id):
         flask.g.zipdir, "%d-%d.zip" % (album.id, int(album.added))
     )
 
-    if not os.path.exists(zfile) or (int(time.time())
-                                     - int(os.stat(zfile).st_ctime) >= 17280):
-        files = [beets.util.syspath(track.path) for track in album.items()]
-        if album.artpath:
-            artpath = beets.util.syspath(album.artpath)
-            files.append(artpath)
-        task.run('bundle', {'zfile': zfile, 'files': files})
+    if os.path.exists(zfile) and (int(time.time())
+                                  - int(os.stat(zfile).st_ctime) <= 17280):
+        return flask.jsonify(url=media_url(zfile))
 
-        return ('', 204)
+    active = dispatcher.job_active(album.id)
+    if active:
+        return flask.jsonify(job=active), 202
 
-    return flask.jsonify(url=media_url(zfile))
+    files = [beets.util.syspath(track.path) for track in album.items()]
+    if album.artpath:
+        artpath = beets.util.syspath(album.artpath)
+        files.append(artpath)
+    job = dispatcher.job_enqueue(
+        {'zfile': zfile, 'files': files},
+        {
+            'zfile': zfile,
+            'album_id': album.id,
+            'album': album.album,
+            'albumartist': album.albumartist,
+            'artpath': (media_url(beets.util.syspath(album.artpath))
+                        if album.artpath else None),
+        },
+    )
+
+    return flask.jsonify(job=job.id), 202
 
 
 @app.route("/album/<int:album_id>/")
@@ -289,6 +307,21 @@ def lastfm():
     return flask.redirect(url)
 
 
+@ws.on('watch_job')
+def watch_job(data):
+    """Client registers interest in a specific job and joins a room for that
+    job ID."""
+    job_id = data.get('job', '')
+    if not job_id:
+        return
+
+    payload = dispatcher.job_ready(job_id)
+    if payload:
+        flask_socketio.emit('download_ready', payload)
+    else:
+        flask_socketio.join_room('job:' + job_id)
+
+
 class App():
     """Class to encapsulate the Flask app and its configuration."""
     def __init__(self, config, lib, media):
@@ -297,7 +330,8 @@ class App():
         self.config = config
         self.lib = lib
         self.app = app
-        self.task = task
+        self.ws = ws
+        self.dispatcher = dispatcher
 
         if "zipdir" in self.config.keys():
             self.app.config["zipdir"] = self.config["zipdir"].get()
@@ -310,11 +344,14 @@ class App():
         self.app.config["lib"] = self.lib
         self.app.config["media"] = media
         self.app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 31536000
+        self.app.config["SECRET_KEY"] = os.urandom(24).hex()
+
+        self._cors_origins = self.config["cors_origins"].get(str)
 
         try:
             _sv = pkg_version("beets-store")
         except Exception:
-            _sv = "0"
+            _sv = uuid.uuid4().hex
         self.app.jinja_env.globals["sv"] = _sv
 
         media = Blueprint(
@@ -326,19 +363,32 @@ class App():
         app.register_blueprint(media)
 
     def run(self):
-        """Run the Flask app with the configured host, port, and SSL
-        context."""
+        """Run the Flask app with the configured host, port, and SSL context."""
+        debug = os.environ.get('FLASK_DEBUG', '').lower() in ('true', '1', 'yes')
+        async_mode = 'threading' if debug else 'gevent'
+
+        self.ws.init_app(self.app, async_mode=async_mode,
+                         cors_allowed_origins=self._cors_origins,
+                         logger=True, engineio_logger=True)
+
+        kwargs = {
+            'host': self.config["host"].get(),
+            'port': self.config["port"].get(int),
+            'debug': debug,
+        }
+
         if os.environ.get('FLASK_SSL_CONTEXT'):
             ssl_dir = os.environ.get('FLASK_SSL_CONTEXT')
-            ssl_context = (os.path.join(ssl_dir, 'cert.pem'),
-                           os.path.join(ssl_dir, 'key.pem'))
-        else:
-            ssl_context = None
+            kwargs['ssl_context'] = (
+                os.path.join(ssl_dir, 'cert.pem'),
+                os.path.join(ssl_dir, 'key.pem'),
+            )
 
-        self.app.run(
-            host=self.config["host"].get(),
-            port=self.config["port"].get(int),
-            threaded=True,
-            debug=os.environ.get('FLASK_DEBUG', '').lower() in ('true', '1', 'yes'),
-            ssl_context=ssl_context,
-        )
+        self.dispatcher.run()
+
+        if debug:
+            kwargs['use_reloader'] = True
+            kwargs['threaded'] = True
+            self.app.run(**kwargs)
+        else:
+            self.ws.run(self.app, **kwargs)

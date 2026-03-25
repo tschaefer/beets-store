@@ -15,4 +15,4 @@ export BEETS_REDIS_URL
 
 echo "Starting beets ..."
 rq worker --url $BEETS_REDIS_URL &
-beet --config $BEETS_CONFIG store --wsgi ${BEETS_BIND_IP:=0.0.0.0} ${BEETS_BIND_PORT:=3000}
+beet --config $BEETS_CONFIG store ${BEETS_BIND_IP:=0.0.0.0} ${BEETS_BIND_PORT:=3000}

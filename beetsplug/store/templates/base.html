@@ -53,6 +53,8 @@
     </div>
   </div>
 
+  <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;"></div>
+
   <div id="player-bar" class="fixed-bottom bg-body-tertiary">
     <audio id="audio"></audio>
     <div id="player-progress">
@@ -91,8 +93,10 @@
 
   <script src="{{ url_for('static', filename='js/bootstrap-5.3.3.bundle.min.js') }}?v={{ sv }}"></script>
   <script src="{{ url_for('static', filename='js/htmx.min.js') }}?v={{ sv }}"></script>
+  <script src="{{ url_for('static', filename='js/socket.io-4.8.2.min.js') }}?v={{ sv }}"></script>
   <script src="{{ url_for('static', filename='js/store.player.js') }}?v={{ sv }}"></script>
   <script src="{{ url_for('static', filename='js/store.htmx.js') }}?v={{ sv }}"></script>
+  <script src="{{ url_for('static', filename='js/store.album.js') }}?v={{ sv }}"></script>
 
   <div id="page-scripts" style="display: none;">
     {% block script %}{% endblock %}
