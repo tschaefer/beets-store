@@ -113,7 +113,7 @@
     if (artEl) artEl.src = playerAlbum.artUrl || "";
     if (trackEl) trackEl.textContent = t ? t.title : "";
     if (albumEl)
-      albumEl.textContent = `${playerAlbum.albumartist} \u00b7 ${playerAlbum.album}`;
+      albumEl.textContent = `${playerAlbum.albumartist} · ${playerAlbum.album}`;
   }
 
   // Show a marker next to the currently playing track in the page track list, if present.
@@ -159,7 +159,6 @@
   audio.addEventListener("play", () => {
     isPlaying = true;
     updatePlayPauseIcon();
-    startWaveAnimation();
 
     var heart = document.getElementById("navbar-heart");
 
@@ -168,11 +167,12 @@
     if (bc) bc.postMessage({ type: "stop" });
   });
 
-  // When a track is paused, update the state and notify LastFM.
+  // When a track is paused, update the state.
   audio.addEventListener("pause", () => {
     isPlaying = false;
     updatePlayPauseIcon();
-    stopWaveAnimation();
+
+    if (playerTracks.length) saveState(index, audio.currentTime);
 
     var heart = document.getElementById("navbar-heart");
 
@@ -210,141 +210,6 @@
       saveState(index, audio.currentTime);
     }
   }, 10000);
-
-  // --- Waveform ---
-
-  var waveAnimId = null;
-  var waveFadeId = null;
-  var waveAlpha = 1.0;
-  var waveCanvas = null;
-  var waveCtx = null;
-  var analyser = null;
-  var waveData = null;
-  var mediaSource = null;
-
-  // Initialize the waveform canvas and set up a ResizeObserver to handle resizes.
-  function initWaveform() {
-    var container = document.getElementById("waveform");
-
-    if (!container) return;
-
-    var dpr = window.devicePixelRatio || 1;
-    var canvas = document.createElement("canvas");
-
-    canvas.style.display = "block";
-    canvas.style.width = "100%";
-    canvas.style.height = "100%";
-    container.appendChild(canvas);
-
-    waveCanvas = canvas;
-    waveCtx = canvas.getContext("2d");
-
-    new ResizeObserver(() => {
-      var w = container.clientWidth;
-      var h = container.clientHeight;
-
-      if (!w || !h) return;
-
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      waveCtx.scale(dpr, dpr);
-
-      if (!waveAnimId) drawWave();
-    }).observe(container);
-  }
-
-  // AudioContext is created lazily on first play to satisfy browser autoplay policy.
-  function ensureAudioContext() {
-    if (analyser) return;
-
-    var ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (!mediaSource) mediaSource = ctx.createMediaElementSource(audio);
-
-    analyser = ctx.createAnalyser();
-    analyser.fftSize = 2048;
-    analyser.smoothingTimeConstant = 0.0;
-    waveData = new Uint8Array(analyser.frequencyBinCount);
-
-    mediaSource.connect(analyser);
-    analyser.connect(ctx.destination);
-  }
-
-  // Draw the current audio waveform onto the canvas.
-  function drawWave() {
-    if (!waveCtx || !waveCanvas || !analyser) return;
-
-    var dpr = window.devicePixelRatio || 1;
-    var w = waveCanvas.width / dpr;
-    var h = waveCanvas.height / dpr;
-
-    if (!w || !h) return;
-
-    analyser.getByteTimeDomainData(waveData);
-
-    var n = waveData.length;
-    waveCtx.clearRect(0, 0, w, h);
-
-    var cs = getComputedStyle(document.documentElement);
-    waveCtx.globalAlpha = waveAlpha;
-    waveCtx.beginPath();
-    waveCtx.strokeStyle = cs.getPropertyValue("--bs-secondary-color").trim();
-    waveCtx.lineWidth = 1;
-    waveCtx.lineJoin = "round";
-
-    for (var i = 0; i < n; i++) {
-      var x = (i / (n - 1)) * w;
-      var y = (waveData[i] / 128.0 - 1.0) * (h / 2) + h / 2;
-      if (i === 0) waveCtx.moveTo(x, y);
-      else waveCtx.lineTo(x, y);
-    }
-
-    waveCtx.stroke();
-  }
-
-  // Animation loop to continuously update the waveform while playing.
-  function animateWave() {
-    if (waveAlpha < 1.0) waveAlpha = Math.min(1.0, waveAlpha + 0.04);
-    drawWave();
-    waveAnimId = requestAnimationFrame(animateWave);
-  }
-
-  // Fade in the waveform and start the animation when playback starts.
-  function startWaveAnimation() {
-    ensureAudioContext();
-
-    if (waveFadeId) {
-      cancelAnimationFrame(waveFadeId);
-      waveFadeId = null;
-    }
-    waveAlpha = 0;
-
-    if (!waveAnimId) waveAnimId = requestAnimationFrame(animateWave);
-  }
-
-  // Fade out the waveform and stop the animation when playback pauses or ends.
-  function stopWaveAnimation() {
-    if (waveAnimId) {
-      cancelAnimationFrame(waveAnimId);
-      waveAnimId = null;
-    }
-
-    function fadeStep() {
-      waveAlpha -= 0.04;
-      if (waveAlpha <= 0) {
-        waveAlpha = 0;
-        if (waveCtx && waveCanvas) {
-          var dpr = window.devicePixelRatio || 1;
-          waveCtx.clearRect(0, 0, waveCanvas.width / dpr, waveCanvas.height / dpr);
-        }
-        waveFadeId = null;
-        return;
-      }
-      drawWave();
-      waveFadeId = requestAnimationFrame(fadeStep);
-    }
-
-    waveFadeId = requestAnimationFrame(fadeStep);
-  }
 
   // --- Controls ---
 
@@ -441,9 +306,33 @@
     };
   }
 
+  // Register MediaSession handlers so native controls (lock screen, headphones)
+  // call our code directly for reliable play/pause/skip behaviour.
+  if (navigator.mediaSession) {
+    navigator.mediaSession.setActionHandler("play", () => {
+      audio.play().catch(() => {});
+    });
+    navigator.mediaSession.setActionHandler("pause", () => {
+      audio.pause();
+    });
+    navigator.mediaSession.setActionHandler("previoustrack", () => {
+      if (index > 0) {
+        loadTrack(--index);
+        audio.play().catch(() => {});
+      }
+    });
+    navigator.mediaSession.setActionHandler("nexttrack", () => {
+      if (index + 1 < playerTracks.length) {
+        loadTrack(++index);
+        audio.play().catch(() => {});
+      }
+    });
+  }
+
   // --- Public API ---
 
-  // This function is called by the album page on every load with the current page's track list and album info.
+  // This function is called by the album page on every load with the current
+  // page's track list and album info.
   window.loadAlbum = (tracks, album) => {
     pageTracks = tracks;
     pageAlbum = album;
@@ -487,9 +376,8 @@
   playerBar.style.display = "block";
   document.body.classList.add("player-active");
   showHideLastFMIcon();
-  initWaveform();
 
-  // On page load, try to restore the player state from local storage and resume playback if possible.
+  // On page load, try to restore the player state from local storage.
   var saved = readState();
 
   if (saved) {

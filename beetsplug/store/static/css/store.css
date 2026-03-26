@@ -7,11 +7,6 @@ body {
   font-family: sans-serif;
 }
 
-#waveform {
-  min-width: 0;
-  height: 44px;
-}
-
 #nav-progress {
   position: fixed;
   top: 0;
