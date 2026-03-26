@@ -28,17 +28,17 @@
       <div id="navbar" class="collapse navbar-collapse">
         <ul class="nav navbar-nav me-auto">
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('.get_albums') }}">Albums</a>
+            <a class="nav-link" href="{{ url_for('get_albums') }}">Albums</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('.get_artists') }}">Artists</a>
+            <a class="nav-link" href="{{ url_for('get_artists') }}">Artists</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('.get_tracks') }}">Tracks</a>
+            <a class="nav-link" href="{{ url_for('get_tracks') }}">Tracks</a>
           </li>
           {% if lastfm %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('.lastfm') }}" hx-boost="false">LastFM</a>
+            <a class="nav-link" href="{{ url_for('lastfm') }}" hx-boost="false">LastFM</a>
           </li>
           {% endif %}
         </ul>
