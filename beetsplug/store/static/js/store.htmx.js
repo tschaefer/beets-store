@@ -1,12 +1,12 @@
 (() => {
   var bar = document.getElementById("nav-progress");
-  var _timer = null;
+  var timer = null;
 
   // Start the progress bar on HTMX requests targeting #page-content.
   document.body.addEventListener("htmx:beforeRequest", (e) => {
     if (e.detail.target.id !== "page-content") return;
 
-    clearTimeout(_timer);
+    clearTimeout(timer);
 
     bar.style.transition = "none";
     bar.style.width = "0%";
@@ -23,9 +23,9 @@
     bar.style.transition = "width 0.15s ease, opacity 0.3s ease";
     bar.style.width = "100%";
 
-    _timer = setTimeout(() => {
+    timer = setTimeout(() => {
       bar.style.opacity = "0";
-      _timer = setTimeout(() => {
+      timer = setTimeout(() => {
         bar.style.width = "0%";
       }, 300);
     }, 150);
@@ -35,11 +35,11 @@
   document.body.addEventListener("htmx:sendError", (e) => {
     if (e.detail.target.id !== "page-content") return;
 
-    clearTimeout(_timer);
+    clearTimeout(timer);
 
     bar.style.transition = "opacity 0.3s ease";
     bar.style.opacity = "0";
-    _timer = setTimeout(() => {
+    timer = setTimeout(() => {
       bar.style.width = "0%";
     }, 300);
   });

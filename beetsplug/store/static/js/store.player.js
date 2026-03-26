@@ -2,17 +2,17 @@
   // --- State ---
 
   // What the player is actually playing — only changes on explicit user action.
-  var _playerTracks = [];
-  var _playerAlbum = {};
-  var _index = 0;
-  var _isPlaying = false;
+  var playerTracks = [];
+  var playerAlbum = {};
+  var index = 0;
+  var isPlaying = false;
 
   // What the currently visited album page has — updated on every loadAlbum() call.
-  var _pageTracks = [];
-  var _pageAlbum = {};
+  var pageTracks = [];
+  var pageAlbum = {};
 
   // BroadcastChannel for cross-tab stop-on-play behavior.
-  var _bc = window.BroadcastChannel ? new BroadcastChannel("beets-store-player") : null;
+  var bc = window.BroadcastChannel ? new BroadcastChannel("beets-store-player") : null;
 
   // --- DOM ---
 
@@ -29,16 +29,16 @@
       localStorage.setItem(
         "playerState",
         JSON.stringify({
-          albumId: _playerAlbum.id,
-          album: _playerAlbum.album,
-          albumartist: _playerAlbum.albumartist,
-          artUrl: _playerAlbum._artUrl || "",
+          albumId: playerAlbum.id,
+          album: playerAlbum.album,
+          albumartist: playerAlbum.albumartist,
+          artUrl: playerAlbum.artUrl || "",
           index: idx,
           position: Math.floor(pos) || 0,
-          tracks: _playerTracks,
+          tracks: playerTracks,
         }),
       );
-    } catch (_e) {}
+    } catch (e) {}
   }
 
   // Read the player state from local storage, or return null if not found or invalid.
@@ -53,7 +53,7 @@
       if (!s || !Array.isArray(s.tracks) || !s.tracks.length) return null;
 
       return s;
-    } catch (_e) {
+    } catch (e) {
       return null;
     }
   }
@@ -91,7 +91,7 @@
     var icon = document.querySelector(".btn-playpause span");
 
     if (icon)
-      icon.className = _isPlaying ? "fa-solid fa-pause" : "fa-solid fa-play";
+      icon.className = isPlaying ? "fa-solid fa-pause" : "fa-solid fa-play";
   }
 
   // Update the player bar display (artwork, track and album info) based on the current track.
@@ -101,19 +101,19 @@
     var linkEl = document.getElementById("player-art-link");
     var trackEl = document.getElementById("player-track");
     var albumEl = document.getElementById("player-album");
-    var t = _playerTracks[_index];
+    var t = playerTracks[index];
 
     if (hintEl) hintEl.style.display = "none";
 
     if (linkEl) {
-      var albumUrl = `/album/${_playerAlbum.id}/`;
+      var albumUrl = `/album/${playerAlbum.id}/`;
       linkEl.style.display = "flex";
       linkEl.href = albumUrl;
     }
-    if (artEl) artEl.src = _playerAlbum._artUrl || "";
+    if (artEl) artEl.src = playerAlbum.artUrl || "";
     if (trackEl) trackEl.textContent = t ? t.title : "";
     if (albumEl)
-      albumEl.textContent = `${_playerAlbum.albumartist} \u00b7 ${_playerAlbum.album}`;
+      albumEl.textContent = `${playerAlbum.albumartist} \u00b7 ${playerAlbum.album}`;
   }
 
   // Show a marker next to the currently playing track in the page track list, if present.
@@ -131,10 +131,10 @@
 
   // Load the specified track index into the audio element, update the display and save the state.
   function loadTrack(idx, pos) {
-    audio.src = _playerTracks[idx].file;
+    audio.src = playerTracks[idx].file;
     progressFill.style.width = "0%";
     updatePlayerDisplay();
-    if (_pageAlbum.id === _playerAlbum.id) {
+    if (pageAlbum.id === playerAlbum.id) {
       setTrackMarker(idx + 1);
     }
     saveState(idx, pos || 0);
@@ -150,14 +150,14 @@
 
   // When the user seeks, update the state with the new position.
   audio.addEventListener("seeked", () => {
-    if (_playerTracks.length) {
-      saveState(_index, audio.currentTime);
+    if (playerTracks.length) {
+      saveState(index, audio.currentTime);
     }
   });
 
   // When a track starts playing, update the state and notify LastFM.
   audio.addEventListener("play", () => {
-    _isPlaying = true;
+    isPlaying = true;
     updatePlayPauseIcon();
     startWaveAnimation();
 
@@ -165,12 +165,12 @@
 
     if (heart) heart.classList.add("playing", "fa-beat-fade");
 
-    if (_bc) _bc.postMessage({ type: "stop" });
+    if (bc) bc.postMessage({ type: "stop" });
   });
 
   // When a track is paused, update the state and notify LastFM.
   audio.addEventListener("pause", () => {
-    _isPlaying = false;
+    isPlaying = false;
     updatePlayPauseIcon();
     stopWaveAnimation();
 
@@ -181,17 +181,17 @@
 
   // When a track ends, scrobble it to LastFM and load the next track if available.
   audio.addEventListener("ended", () => {
-    sendLastFM("scrobble", _playerTracks[_index].id);
+    sendLastFM("scrobble", playerTracks[index].id);
 
-    if (_index + 1 < _playerTracks.length) {
-      loadTrack(++_index);
+    if (index + 1 < playerTracks.length) {
+      loadTrack(++index);
       audio.play().catch((e) => {
         console.warn("Playback failed:", e);
       });
-      sendLastFM("now_playing", _playerTracks[_index].id);
+      sendLastFM("now_playing", playerTracks[index].id);
     } else {
-      _index = 0;
-      loadTrack(_index);
+      index = 0;
+      loadTrack(index);
     }
   });
 
@@ -206,21 +206,21 @@
 
   // Save position every 10 seconds while playing.
   setInterval(() => {
-    if (_isPlaying && _playerTracks.length) {
-      saveState(_index, audio.currentTime);
+    if (isPlaying && playerTracks.length) {
+      saveState(index, audio.currentTime);
     }
   }, 10000);
 
   // --- Waveform ---
 
-  var _waveAnimId = null;
-  var _waveFadeId = null;
-  var _waveAlpha = 1.0;
-  var _waveCanvas = null;
-  var _waveCtx = null;
-  var _analyser = null;
-  var _waveData = null;
-  var _mediaSource = null;
+  var waveAnimId = null;
+  var waveFadeId = null;
+  var waveAlpha = 1.0;
+  var waveCanvas = null;
+  var waveCtx = null;
+  var analyser = null;
+  var waveData = null;
+  var mediaSource = null;
 
   // Initialize the waveform canvas and set up a ResizeObserver to handle resizes.
   function initWaveform() {
@@ -236,8 +236,8 @@
     canvas.style.height = "100%";
     container.appendChild(canvas);
 
-    _waveCanvas = canvas;
-    _waveCtx = canvas.getContext("2d");
+    waveCanvas = canvas;
+    waveCtx = canvas.getContext("2d");
 
     new ResizeObserver(() => {
       var w = container.clientWidth;
@@ -247,103 +247,103 @@
 
       canvas.width = w * dpr;
       canvas.height = h * dpr;
-      _waveCtx.scale(dpr, dpr);
+      waveCtx.scale(dpr, dpr);
 
-      if (!_waveAnimId) drawWave();
+      if (!waveAnimId) drawWave();
     }).observe(container);
   }
 
   // AudioContext is created lazily on first play to satisfy browser autoplay policy.
   function ensureAudioContext() {
-    if (_analyser) return;
+    if (analyser) return;
 
     var ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (!_mediaSource) _mediaSource = ctx.createMediaElementSource(audio);
+    if (!mediaSource) mediaSource = ctx.createMediaElementSource(audio);
 
-    _analyser = ctx.createAnalyser();
-    _analyser.fftSize = 2048;
-    _analyser.smoothingTimeConstant = 0.0;
-    _waveData = new Uint8Array(_analyser.frequencyBinCount);
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.0;
+    waveData = new Uint8Array(analyser.frequencyBinCount);
 
-    _mediaSource.connect(_analyser);
-    _analyser.connect(ctx.destination);
+    mediaSource.connect(analyser);
+    analyser.connect(ctx.destination);
   }
 
   // Draw the current audio waveform onto the canvas.
   function drawWave() {
-    if (!_waveCtx || !_waveCanvas || !_analyser) return;
+    if (!waveCtx || !waveCanvas || !analyser) return;
 
     var dpr = window.devicePixelRatio || 1;
-    var w = _waveCanvas.width / dpr;
-    var h = _waveCanvas.height / dpr;
+    var w = waveCanvas.width / dpr;
+    var h = waveCanvas.height / dpr;
 
     if (!w || !h) return;
 
-    _analyser.getByteTimeDomainData(_waveData);
+    analyser.getByteTimeDomainData(waveData);
 
-    var n = _waveData.length;
-    _waveCtx.clearRect(0, 0, w, h);
+    var n = waveData.length;
+    waveCtx.clearRect(0, 0, w, h);
 
     var cs = getComputedStyle(document.documentElement);
-    _waveCtx.globalAlpha = _waveAlpha;
-    _waveCtx.beginPath();
-    _waveCtx.strokeStyle = cs.getPropertyValue("--bs-secondary-color").trim();
-    _waveCtx.lineWidth = 1;
-    _waveCtx.lineJoin = "round";
+    waveCtx.globalAlpha = waveAlpha;
+    waveCtx.beginPath();
+    waveCtx.strokeStyle = cs.getPropertyValue("--bs-secondary-color").trim();
+    waveCtx.lineWidth = 1;
+    waveCtx.lineJoin = "round";
 
     for (var i = 0; i < n; i++) {
       var x = (i / (n - 1)) * w;
-      var y = (_waveData[i] / 128.0 - 1.0) * (h / 2) + h / 2;
-      if (i === 0) _waveCtx.moveTo(x, y);
-      else _waveCtx.lineTo(x, y);
+      var y = (waveData[i] / 128.0 - 1.0) * (h / 2) + h / 2;
+      if (i === 0) waveCtx.moveTo(x, y);
+      else waveCtx.lineTo(x, y);
     }
 
-    _waveCtx.stroke();
+    waveCtx.stroke();
   }
 
   // Animation loop to continuously update the waveform while playing.
-  function _animateWave() {
-    if (_waveAlpha < 1.0) _waveAlpha = Math.min(1.0, _waveAlpha + 0.04);
+  function animateWave() {
+    if (waveAlpha < 1.0) waveAlpha = Math.min(1.0, waveAlpha + 0.04);
     drawWave();
-    _waveAnimId = requestAnimationFrame(_animateWave);
+    waveAnimId = requestAnimationFrame(animateWave);
   }
 
   // Fade in the waveform and start the animation when playback starts.
   function startWaveAnimation() {
     ensureAudioContext();
 
-    if (_waveFadeId) {
-      cancelAnimationFrame(_waveFadeId);
-      _waveFadeId = null;
+    if (waveFadeId) {
+      cancelAnimationFrame(waveFadeId);
+      waveFadeId = null;
     }
-    _waveAlpha = 0;
+    waveAlpha = 0;
 
-    if (!_waveAnimId) _waveAnimId = requestAnimationFrame(_animateWave);
+    if (!waveAnimId) waveAnimId = requestAnimationFrame(animateWave);
   }
 
   // Fade out the waveform and stop the animation when playback pauses or ends.
   function stopWaveAnimation() {
-    if (_waveAnimId) {
-      cancelAnimationFrame(_waveAnimId);
-      _waveAnimId = null;
+    if (waveAnimId) {
+      cancelAnimationFrame(waveAnimId);
+      waveAnimId = null;
     }
 
     function fadeStep() {
-      _waveAlpha -= 0.04;
-      if (_waveAlpha <= 0) {
-        _waveAlpha = 0;
-        if (_waveCtx && _waveCanvas) {
+      waveAlpha -= 0.04;
+      if (waveAlpha <= 0) {
+        waveAlpha = 0;
+        if (waveCtx && waveCanvas) {
           var dpr = window.devicePixelRatio || 1;
-          _waveCtx.clearRect(0, 0, _waveCanvas.width / dpr, _waveCanvas.height / dpr);
+          waveCtx.clearRect(0, 0, waveCanvas.width / dpr, waveCanvas.height / dpr);
         }
-        _waveFadeId = null;
+        waveFadeId = null;
         return;
       }
       drawWave();
-      _waveFadeId = requestAnimationFrame(fadeStep);
+      waveFadeId = requestAnimationFrame(fadeStep);
     }
 
-    _waveFadeId = requestAnimationFrame(fadeStep);
+    waveFadeId = requestAnimationFrame(fadeStep);
   }
 
   // --- Controls ---
@@ -354,15 +354,15 @@
     .addEventListener("click", function () {
       this.blur();
 
-      if (!_playerTracks.length) return;
+      if (!playerTracks.length) return;
 
-      if (_isPlaying) {
+      if (isPlaying) {
         audio.pause();
       } else {
         audio.play().catch((e) => {
           console.warn("Playback failed:", e);
         });
-        sendLastFM("now_playing", _playerTracks[_index].id);
+        sendLastFM("now_playing", playerTracks[index].id);
       }
     });
 
@@ -370,14 +370,14 @@
   document.querySelector(".btn-next").addEventListener("click", function () {
     this.blur();
 
-    if (_index + 1 < _playerTracks.length) {
-      loadTrack(++_index);
+    if (index + 1 < playerTracks.length) {
+      loadTrack(++index);
 
-      if (_isPlaying) {
+      if (isPlaying) {
         audio.play().catch((e) => {
           console.warn("Playback failed:", e);
         });
-        sendLastFM("now_playing", _playerTracks[_index].id);
+        sendLastFM("now_playing", playerTracks[index].id);
       }
     }
   });
@@ -386,14 +386,14 @@
   document.querySelector(".btn-prev").addEventListener("click", function () {
     this.blur();
 
-    if (_index - 1 > -1) {
-      loadTrack(--_index);
+    if (index - 1 > -1) {
+      loadTrack(--index);
 
-      if (_isPlaying) {
+      if (isPlaying) {
         audio.play().catch((e) => {
           console.warn("Playback failed:", e);
         });
-        sendLastFM("now_playing", _playerTracks[_index].id);
+        sendLastFM("now_playing", playerTracks[index].id);
       }
     }
   });
@@ -419,24 +419,24 @@
     if (!btn) return;
 
     btn.blur();
-    _playerTracks = _pageTracks;
-    _playerAlbum = _pageAlbum;
-    _index = parseInt(btn.value, 10) - 1;
-    loadTrack(_index);
+    playerTracks = pageTracks;
+    playerAlbum = pageAlbum;
+    index = parseInt(btn.value, 10) - 1;
+    loadTrack(index);
 
-    if (_isPlaying) {
+    if (isPlaying) {
       audio.play().catch((e) => {
         console.warn("Playback failed:", e);
       });
-      sendLastFM("now_playing", _playerTracks[_index].id);
+      sendLastFM("now_playing", playerTracks[index].id);
     }
   });
 
   // --- Cross-tab sync ---
 
   // When another tab starts playing, pause this one.
-  if (_bc) {
-    _bc.onmessage = (e) => {
+  if (bc) {
+    bc.onmessage = (e) => {
       if (e.data.type === "stop") audio.pause();
     };
   }
@@ -445,16 +445,16 @@
 
   // This function is called by the album page on every load with the current page's track list and album info.
   window.loadAlbum = (tracks, album) => {
-    _pageTracks = tracks;
-    _pageAlbum = album;
+    pageTracks = tracks;
+    pageAlbum = album;
 
     var pageArt = document.querySelector("#page-content .card img");
-    _pageAlbum._artUrl = album._artUrl || (pageArt ? pageArt.src : "");
+    pageAlbum.artUrl = album.artUrl || (pageArt ? pageArt.src : "");
 
     showHideLastFMIcon();
 
-    if (_playerTracks.length) {
-      var currentFile = _playerTracks[_index].file;
+    if (playerTracks.length) {
+      var currentFile = playerTracks[index].file;
       var matchIdx = -1;
       for (var i = 0; i < tracks.length; i++) {
         if (tracks[i].file === currentFile) {
@@ -470,11 +470,11 @@
   // track list.
   document.body.addEventListener("htmx:afterSettle", (e) => {
     if (e.detail.target.id !== "page-content") return;
-    if (!_playerTracks.length) return;
+    if (!playerTracks.length) return;
 
-    var currentFile = _playerTracks[_index].file;
-    for (var i = 0; i < _pageTracks.length; i++) {
-      if (_pageTracks[i].file === currentFile) {
+    var currentFile = playerTracks[index].file;
+    for (var i = 0; i < pageTracks.length; i++) {
+      if (pageTracks[i].file === currentFile) {
         setTrackMarker(i + 1);
         return;
       }
@@ -490,31 +490,31 @@
   initWaveform();
 
   // On page load, try to restore the player state from local storage and resume playback if possible.
-  var _saved = readState();
+  var saved = readState();
 
-  if (_saved) {
-    _playerTracks = _saved.tracks;
-    _playerAlbum = {
-      id: _saved.albumId,
-      album: _saved.album,
-      albumartist: _saved.albumartist,
-      _artUrl: _saved.artUrl,
+  if (saved) {
+    playerTracks = saved.tracks;
+    playerAlbum = {
+      id: saved.albumId,
+      album: saved.album,
+      albumartist: saved.albumartist,
+      artUrl: saved.artUrl,
     };
-    _index = _saved.index;
-    loadTrack(_index, _saved.position);
+    index = saved.index;
+    loadTrack(index, saved.position);
 
-    if (_saved.position > 0) {
+    if (saved.position > 0) {
       audio.addEventListener("canplay", function seek() {
-        audio.currentTime = _saved.position;
+        audio.currentTime = saved.position;
         audio.removeEventListener("canplay", seek);
       });
     }
   }
 
   // On full page load of an album page, load the album data.
-  var _albumDataEl = document.getElementById("album-data");
-  if (_albumDataEl) {
-    var _albumData = JSON.parse(_albumDataEl.textContent);
-    window.loadAlbum(_albumData.tracks, _albumData.album);
+  var albumDataEl = document.getElementById("album-data");
+  if (albumDataEl) {
+    var albumData = JSON.parse(albumDataEl.textContent);
+    window.loadAlbum(albumData.tracks, albumData.album);
   }
 })();
