@@ -82,6 +82,35 @@ def inject_lastfm():
 
 
 @app.after_request
+def set_security_headers(response):
+    """Set security headers on every response."""
+    csp = (
+        "default-src 'none'; "
+        "script-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "font-src 'self'; "
+        "connect-src 'self'; "
+        "media-src 'self'; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "frame-ancestors 'none';"
+    )
+    response.headers["Content-Security-Policy"] = csp
+    response.headers["Permissions-Policy"] = (
+        "camera=(), geolocation=(), microphone=(), payment=()"
+    )
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Strict-Transport-Security"] = (
+        "max-age=31536000; includeSubDomains"
+    )
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    return response
+
+
+@app.after_request
 def set_media_headers(response):
     """Set appropriate headers for media files."""
     kind = response.headers.get("Content-Type")

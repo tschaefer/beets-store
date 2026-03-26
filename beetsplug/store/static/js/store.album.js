@@ -2,6 +2,13 @@
   document.addEventListener("DOMContentLoaded", () => {
     var socket = io();
 
+    // Get the current album ID from the page.
+    function getAlbumId() {
+      var el = document.getElementById("album-data");
+      if (!el) return null;
+      return JSON.parse(el.textContent).album.id;
+    }
+
     // Attach the download button handler.
     function attachDownloadButton() {
       var btn = document.getElementById("btn-get-album");
@@ -15,7 +22,7 @@
         var xhr = new XMLHttpRequest();
         var data;
 
-        xhr.open("GET", `/album/${album.id}/file`, true);
+        xhr.open("GET", `/album/${getAlbumId()}/file`, true);
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Accept", "application/json");
 
@@ -62,7 +69,7 @@
     // Handle a succeeded download job.
     socket.on("download_ready", (data) => {
       var btn = document.getElementById("btn-get-album");
-      if (btn && typeof album !== "undefined" && data.album_id === album.id) {
+      if (btn && data.album_id === getAlbumId()) {
         btn.disabled = false;
       }
 
@@ -89,7 +96,7 @@
     // Handle a failed download job.
     socket.on("download_failed", (data) => {
       var btn = document.getElementById("btn-get-album");
-      if (btn && typeof album !== "undefined" && data.album_id === album.id) {
+      if (btn && data.album_id === getAlbumId()) {
         btn.disabled = false;
       }
 

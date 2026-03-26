@@ -44,7 +44,7 @@
     }, 300);
   });
 
-  // Re-run page-specific scripts after every HTMX swap.
+  // Load album data after every HTMX swap into #page-content.
   document.body.addEventListener("htmx:afterSwap", (e) => {
     if (e.detail.target.id !== "page-content") return;
 
@@ -53,14 +53,11 @@
       "text/html",
     );
 
-    doc.querySelectorAll("#page-scripts script").forEach((s) => {
-      var n = document.createElement("script");
+    var el = doc.getElementById("album-data");
+    if (!el || !window.loadAlbum) return;
 
-      if (s.src) n.src = s.src;
-      else n.textContent = s.textContent;
-
-      document.body.appendChild(n);
-    });
+    var data = JSON.parse(el.textContent);
+    window.loadAlbum(data.tracks, data.album);
   });
 
   // Exclude media links from HTMX boost.

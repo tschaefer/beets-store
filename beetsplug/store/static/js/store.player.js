@@ -510,4 +510,11 @@
       });
     }
   }
+
+  // On full page load of an album page, load the album data.
+  var _albumDataEl = document.getElementById("album-data");
+  if (_albumDataEl) {
+    var _albumData = JSON.parse(_albumDataEl.textContent);
+    window.loadAlbum(_albumData.tracks, _albumData.album);
+  }
 })();
