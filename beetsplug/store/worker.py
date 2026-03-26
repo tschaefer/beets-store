@@ -3,7 +3,6 @@
 """Beets store Redis queue worker."""
 
 import os
-import time
 import zipfile
 
 from rq import Queue, Callback
@@ -18,16 +17,12 @@ def bundle(arguments):
     files = arguments.get('files')
 
     if os.path.exists(zfile):
-        if (int(time.time()) - int(os.stat(zfile).st_ctime)) >= 17280:
-            os.remove(zfile)
-        else:
-            return zfile
+        os.remove(zfile)
 
-    if not os.path.exists(zfile):
-        with zipfile.ZipFile(zfile, "w", zipfile.ZIP_DEFLATED) as zipfh:
-            for file in files:
-                file_str = file.decode("utf-8") if isinstance(file, bytes) else file
-                zipfh.write(file_str, os.path.basename(file_str))
+    with zipfile.ZipFile(zfile, "w", zipfile.ZIP_DEFLATED) as zipfh:
+        for file in files:
+            file_str = file.decode("utf-8") if isinstance(file, bytes) else file
+            zipfh.write(file_str, os.path.basename(file_str))
 
     return zfile
 

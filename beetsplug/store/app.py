@@ -25,6 +25,9 @@ ws = SocketIO()
 dispatcher = Dispatcher(app, ws)
 
 
+FILE_EXPIRY_SECONDS = 43200  # 12 hours
+
+
 @app.template_filter("duration")
 def duration_filter(timestamp):
     """Convert a timestamp in seconds to a human-readable format."""
@@ -205,18 +208,20 @@ def get_album_file(album_id):
         flask.g.zipdir, "%d-%d.zip" % (album.id, int(album.added))
     )
 
-    if os.path.exists(zfile) and (int(time.time())
-                                  - int(os.stat(zfile).st_ctime) <= 17280):
-        return flask.jsonify(url=media_url(zfile))
-
     active = dispatcher.job_active(album.id)
     if active:
         return flask.jsonify(job=active), 202
+
+    if os.path.exists(zfile):
+        expired = (int(time.time()) - int(os.stat(zfile).st_ctime) >= FILE_EXPIRY_SECONDS)
+        if not expired:
+            return flask.jsonify(url=media_url(zfile))
 
     files = [beets.util.syspath(track.path) for track in album.items()]
     if album.artpath:
         artpath = beets.util.syspath(album.artpath)
         files.append(artpath)
+
     job = dispatcher.job_enqueue(
         {'zfile': zfile, 'files': files},
         {
@@ -224,8 +229,7 @@ def get_album_file(album_id):
             'album_id': album.id,
             'album': album.album,
             'albumartist': album.albumartist,
-            'artpath': (media_url(beets.util.syspath(album.artpath))
-                        if album.artpath else None),
+            'artpath': (media_url(beets.util.syspath(album.artpath)) if album.artpath else None),
         },
     )
 
