@@ -1,6 +1,4 @@
 (() => {
-  var notified = new Set();
-
   document.addEventListener("DOMContentLoaded", () => {
     var socket = io();
 
@@ -68,9 +66,6 @@
         btn.disabled = false;
       }
 
-      if (notified.has(data.job)) return;
-      notified.add(data.job);
-
       var label = `${data.albumartist} \u00b7 ${data.album}`;
       var art = data.artpath
         ? `<img src="${data.artpath}" class="toast-art rounded-start" alt="">`
@@ -98,11 +93,7 @@
         btn.disabled = false;
       }
 
-      if (notified.has(data.job)) return;
-      notified.add(data.job);
-
       var label = `${data.albumartist} \u00b7 ${data.album}`;
-
       showToast(
         '<div class="toast text-bg-danger">' +
           '<div class="d-flex">' +
