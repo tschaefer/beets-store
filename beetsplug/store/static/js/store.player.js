@@ -209,6 +209,8 @@
   // --- Waveform ---
 
   var _waveAnimId = null;
+  var _waveFadeId = null;
+  var _waveAlpha = 1.0;
   var _waveCanvas = null;
   var _waveCtx = null;
   var _analyser = null;
@@ -278,6 +280,7 @@
     _waveCtx.clearRect(0, 0, w, h);
 
     var cs = getComputedStyle(document.documentElement);
+    _waveCtx.globalAlpha = _waveAlpha;
     _waveCtx.beginPath();
     _waveCtx.strokeStyle = cs.getPropertyValue("--bs-secondary-color").trim();
     _waveCtx.lineWidth = 1;
@@ -295,19 +298,43 @@
 
   // Animation loop to continuously update the waveform while playing.
   function _animateWave() {
+    if (_waveAlpha < 1.0) _waveAlpha = Math.min(1.0, _waveAlpha + 0.04);
     drawWave();
     _waveAnimId = requestAnimationFrame(_animateWave);
   }
 
-  // Start the waveform animation when playback starts.
+  // Fade in the waveform and start the animation when playback starts.
   function startWaveAnimation() {
     ensureAudioContext();
+
+    if (_waveFadeId) {
+      cancelAnimationFrame(_waveFadeId);
+      _waveFadeId = null;
+    }
+    _waveAlpha = 0;
 
     if (!_waveAnimId) _waveAnimId = requestAnimationFrame(_animateWave);
   }
 
-  // Stop the waveform animation when playback pauses or ends.
+  // Fade out the waveform and stop the animation when playback pauses or ends.
   function stopWaveAnimation() {
+    function fadeStep() {
+      _waveAlpha -= 0.04;
+      if (_waveAlpha <= 0) {
+        _waveAlpha = 0;
+        if (_waveCtx && _waveCanvas) {
+          var dpr = window.devicePixelRatio || 1;
+          _waveCtx.clearRect(0, 0, _waveCanvas.width / dpr, _waveCanvas.height / dpr);
+        }
+        _waveFadeId = null;
+        return;
+      }
+      drawWave();
+      _waveFadeId = requestAnimationFrame(fadeStep);
+    }
+
+    _waveFadeId = requestAnimationFrame(fadeStep);
+
     if (_waveAnimId) {
       cancelAnimationFrame(_waveAnimId);
       _waveAnimId = null;
