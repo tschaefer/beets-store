@@ -403,7 +403,7 @@
       swap: "innerHTML",
       select: "#page-content",
       selectOOB: "#navbar-form",
-      push: true,
+      push: "true",
     });
   });
 
