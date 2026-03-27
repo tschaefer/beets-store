@@ -92,6 +92,10 @@ Set `BEETS_MUSIC_VOLUME` in the environment file `docker-compose.env`.
 For overriding the configuration file and persist the database enable and set
 the proper settings in the enviroment and compose files.
 
+The container runs as a non-root user `beets` with UID/GID `1000`. Ensure the
+host music directory is readable (and writable, for album art fetching) by
+UID `1000`.
+
 Start the service.
 
     $ docker compose --env-file docker-compose.env up
