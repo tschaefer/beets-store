@@ -6,6 +6,7 @@
     function getAlbumId() {
       var el = document.getElementById("album-data");
       if (!el) return null;
+
       return JSON.parse(el.textContent).album.id;
     }
 

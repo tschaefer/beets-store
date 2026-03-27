@@ -1,18 +1,18 @@
 (() => {
   // --- State ---
 
-  // What the player is actually playing — only changes on explicit user action.
+  // Player state.
   var playerTracks = [];
   var playerAlbum = {};
   var index = 0;
   var isPlaying = false;
 
-  // What the currently visited album page has — updated on every loadAlbum() call.
+  // Album page state.
   var pageTracks = [];
   var pageAlbum = {};
 
   // BroadcastChannel for cross-tab stop-on-play behavior.
-  var bc = window.BroadcastChannel
+  var broadcast = window.BroadcastChannel
     ? new BroadcastChannel("beets-store-player")
     : null;
 
@@ -40,22 +40,23 @@
           tracks: playerTracks,
         }),
       );
-    } catch (_e) {}
+    } catch (e) {
+        console.warn("Failed to save player state:", e);
+    }
   }
 
   // Read the player state from local storage, or return null if not found or invalid.
   function readState() {
     try {
       var raw = localStorage.getItem("playerState");
-
       if (!raw) return null;
 
       var s = JSON.parse(raw);
-
       if (!s || !Array.isArray(s.tracks) || !s.tracks.length) return null;
 
       return s;
-    } catch (_e) {
+    } catch (e) {
+      console.warn("Failed to read player state:", e);
       return null;
     }
   }
@@ -76,7 +77,6 @@
   // Show or hide the LastFM icon in the player bar based on the presence of the cookie.
   function showHideLastFMIcon() {
     var el = document.getElementById("player-lastfm");
-
     if (!el) return;
 
     var visible = document.cookie
@@ -91,9 +91,9 @@
   // Update the play/pause button icon based on the current playback state.
   function updatePlayPauseIcon() {
     var icon = document.querySelector(".btn-playpause span");
+    if (!icon) return;
 
-    if (icon)
-      icon.className = isPlaying ? "fa-solid fa-pause" : "fa-solid fa-play";
+    icon.className = isPlaying ? "fa-solid fa-pause" : "fa-solid fa-play";
   }
 
   // Update the player bar display (artwork, track and album info) based on the current track.
@@ -125,7 +125,6 @@
     });
 
     var marker = document.getElementById(`track-marker-${oneBasedIdx}`);
-
     if (marker) marker.style.display = "";
   }
 
@@ -156,7 +155,7 @@
   audio.addEventListener("timeupdate", () => {
     if (!audio.duration) return;
 
-    // biome-ignore lint: Readabillity.
+    /* biome-ignore lint: Readabillity. */
     progressFill.style.width = (audio.currentTime / audio.duration) * 100 + "%";
   });
 
@@ -173,10 +172,9 @@
     updatePlayPauseIcon();
 
     var heart = document.getElementById("navbar-heart");
-
     if (heart) heart.classList.add("playing", "fa-beat-fade");
 
-    if (bc) bc.postMessage({ type: "stop" });
+    if (broadcast) broadcast.postMessage({ type: "stop" });
   });
 
   // When a track is paused, update the state.
@@ -312,8 +310,8 @@
   // --- Cross-tab sync ---
 
   // When another tab starts playing, pause this one.
-  if (bc) {
-    bc.onmessage = (e) => {
+  if (broadcast) {
+    broadcast.onmessage = (e) => {
       if (e.data.type === "stop") audio.pause();
     };
   }

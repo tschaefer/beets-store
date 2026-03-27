@@ -16,6 +16,7 @@ API_AUTH = "https://www.last.fm/api/auth?api_key=%s"
 
 class LastFM:
     """Last FM API client for authentication and scrobbling."""
+
     def __init__(self, api_key, secret_key, logger):
         """Initialize the LastFM client with API credentials and a logger."""
         self.api_key = api_key
@@ -35,7 +36,7 @@ class LastFM:
         if session_key:
             parameters.update({"sk": session_key})
 
-        parameters.update({"api_sig": self.sign_request(parameters)})
+        parameters.update({"api_sig": self.__sign_request(parameters)})
 
         response = requests.post(API_ENDPOINT, parameters)
         now = datetime.now()
@@ -50,22 +51,6 @@ class LastFM:
         )
 
         return response
-
-    def sign_request(self, parameters):
-        """Generate an API signature for the given parameters."""
-        string = ""
-        keys = parameters.keys()
-
-        for key in sorted(keys):
-            string += key
-            string += str(parameters[key])
-        string += self.secret_key
-
-        encoded = string.encode("utf8")
-
-        signature = hashlib.md5(encoded).hexdigest()
-
-        return signature
 
     def auth_url(self, callback=None):
         """Generate the URL for Last FM authentication, optionally with a
@@ -105,7 +90,23 @@ class LastFM:
             )
             response.raise_for_status()
             data = response.json()
+
             return data["session"]["key"]
         except (requests.RequestException, ValueError, KeyError) as e:
             self.logger.error("LastFM auth.getSession failed: %s", e)
             return None
+
+    def __sign_request(self, parameters):
+        """Generate an API signature for the given parameters."""
+        string = ""
+        keys = parameters.keys()
+
+        for key in sorted(keys):
+            string += key
+            string += str(parameters[key])
+        string += self.secret_key
+
+        encoded = string.encode("utf8")
+        signature = hashlib.md5(encoded).hexdigest()
+
+        return signature

@@ -15,7 +15,7 @@ class Store(BeetsPlugin):
         super(Store, self).__init__()
         self.config.add(
             {
-                "host": u"",
+                "host": "",
                 "port": 8080,
                 "cors_origins": "*",
             }

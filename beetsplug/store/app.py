@@ -5,7 +5,6 @@
 import beets
 import flask
 import os
-import tempfile
 import time
 import uuid
 import werkzeug
@@ -13,11 +12,11 @@ import werkzeug
 from flask import Flask, Blueprint
 import flask_socketio
 from flask_socketio import SocketIO
-from importlib.metadata import version as pkg_version
+import importlib.metadata
 
 from .lastfm import LastFM
 from .dispatcher import Dispatcher
-from .utils import request_is_json, decode, media_url
+from . import utils
 
 
 app = Flask(__name__)
@@ -46,9 +45,9 @@ def duration_filter(timestamp):
 @app.before_request
 def before_request():
     """Set up the database connection and other global variables."""
-    flask.g.lib = app.config['lib']
-    flask.g.zipdir = app.config['zipdir']
-    flask.g.lastfm = app.config.get('lastfm', None)
+    flask.g.lib = app.config["lib"]
+    flask.g.zipdir = app.config["zipdir"]
+    flask.g.lastfm = app.config.get("lastfm", None)
 
 
 @app.errorhandler(405)
@@ -56,21 +55,21 @@ def before_request():
 def page_not_found(e):
     """Handle 404 and 405 errors with custom messages."""
     if isinstance(e, werkzeug.exceptions.NotFound):
-        if not request_is_json():
+        if not utils.request_is_json():
             return flask.render_template("http_error.html", error=404), 404
 
         error = "I Want That Mulan McNugget Sauce, Morty!"
         return flask.jsonify(error=error), 404
 
     if isinstance(e, werkzeug.exceptions.MethodNotAllowed):
-        if not request_is_json():
+        if not utils.request_is_json():
             return flask.render_template("http_error.html", error=405), 405
 
         error = "Sometimes Science Is More Art Than Science."
         return flask.jsonify(error=error), 405
 
     if isinstance(e, werkzeug.exceptions.BadRequest):
-        if not request_is_json():
+        if not utils.request_is_json():
             return flask.render_template("http_error.html", error=400), 400
 
         error = "Wubba Lubba Dub Dub!"
@@ -147,14 +146,16 @@ def get_tracks():
             sql = "SELECT * FROM items WHERE title LIKE ? ORDER BY album, disc, track"
             tracks = transaction.query(sql, ("%" + query + "%",))
         else:
-            tracks = transaction.query("SELECT * FROM items ORDER BY album, disc, track")
+            tracks = transaction.query(
+                "SELECT * FROM items ORDER BY album, disc, track"
+            )
 
     if not tracks:
         flask.abort(404)
 
-    tracks = [decode(track, 'track') for track in tracks]
+    tracks = [utils.decode(track, "track") for track in tracks]
 
-    if request_is_json():
+    if utils.request_is_json():
         return flask.jsonify(tracks=tracks)
 
     return flask.render_template("tracks.html", tracks=tracks)
@@ -172,14 +173,16 @@ def get_artists():
             sql = "SELECT DISTINCT albumartist FROM albums WHERE albumartist LIKE ? ORDER BY albumartist"
             artists_list = transaction.query(sql, ("%" + query + "%",))
         else:
-            artists_list = transaction.query("SELECT DISTINCT albumartist FROM albums ORDER BY albumartist")
+            artists_list = transaction.query(
+                "SELECT DISTINCT albumartist FROM albums ORDER BY albumartist"
+            )
 
         artist_list = [artist[0] for artist in artists_list]
 
     artists = []
     for artist in artist_list:
         albums = [
-            decode(album, 'album')
+            utils.decode(album, "album")
             for album in flask.g.lib.albums(query="albumartist:%s" % (artist))
         ]
         entry = {"artist": artist, "albums": albums}
@@ -188,7 +191,7 @@ def get_artists():
     if not artists:
         flask.abort(404)
 
-    if request_is_json():
+    if utils.request_is_json():
         return flask.jsonify(artists=artists)
 
     return flask.render_template("artists.html", artists=artists)
@@ -197,25 +200,23 @@ def get_artists():
 @app.route("/album/<int:album_id>/file")
 def get_album_file(album_id):
     """Get a zip file containing the tracks of the specified album."""
-    if not request_is_json():
+    if not utils.request_is_json():
         flask.abort(405)
 
     album = flask.g.lib.get_album(album_id)
     if not album:
         flask.abort(404)
 
-    zfile = os.path.join(
-        flask.g.zipdir, "%d-%d.zip" % (album.id, int(album.added))
-    )
+    zfile = os.path.join(flask.g.zipdir, "%d-%d.zip" % (album.id, int(album.added)))
 
     active = dispatcher.job_active(album.id)
     if active:
         return flask.jsonify(job=active), 202
 
     if os.path.exists(zfile):
-        expired = (int(time.time()) - int(os.stat(zfile).st_ctime) >= FILE_EXPIRY_SECONDS)
+        expired = int(time.time()) - int(os.stat(zfile).st_ctime) >= FILE_EXPIRY_SECONDS
         if not expired:
-            return flask.jsonify(url=media_url(zfile))
+            return flask.jsonify(url=utils.media_url(zfile))
 
     files = [beets.util.syspath(track.path) for track in album.items()]
     if album.artpath:
@@ -223,13 +224,17 @@ def get_album_file(album_id):
         files.append(artpath)
 
     job = dispatcher.job_enqueue(
-        {'zfile': zfile, 'files': files},
+        {"zfile": zfile, "files": files},
         {
-            'zfile': zfile,
-            'album_id': album.id,
-            'album': album.album,
-            'albumartist': album.albumartist,
-            'artpath': (media_url(beets.util.syspath(album.artpath)) if album.artpath else None),
+            "zfile": zfile,
+            "album_id": album.id,
+            "album": album.album,
+            "albumartist": album.albumartist,
+            "artpath": (
+                utils.media_url(beets.util.syspath(album.artpath))
+                if album.artpath
+                else None
+            ),
         },
     )
 
@@ -247,11 +252,11 @@ def get_album(album_id):
         sql = "SELECT * FROM items WHERE album_id=? ORDER BY disc, track"
         tracks = transaction.query(sql, (album_id,))
 
-    album = decode(album, 'album')
-    tracks = [decode(track, 'track') for track in tracks]
+    album = utils.decode(album, "album")
+    tracks = [utils.decode(track, "track") for track in tracks]
     album["tracks"] = tracks
 
-    if request_is_json():
+    if utils.request_is_json():
         return flask.jsonify(album=album)
 
     return flask.render_template("album.html", album=album)
@@ -272,9 +277,9 @@ def get_albums():
         else:
             albums = transaction.query("SELECT * FROM albums ORDER BY album")
 
-    albums = [decode(album, 'album') for album in albums]
+    albums = [utils.decode(album, "album") for album in albums]
 
-    if request_is_json():
+    if utils.request_is_json():
         return flask.jsonify(albums=albums)
 
     return flask.render_template("albums.html", albums=albums)
@@ -284,7 +289,7 @@ def get_albums():
 def lastfm():
     """Handle LastFM authentication and scrobbling."""
     if not flask.g.lastfm:
-        return ('', 204)
+        return ("", 204)
 
     api_key = flask.g.lastfm.get("api_key")
     secret_key = flask.g.lastfm.get("secret_key")
@@ -301,7 +306,12 @@ def lastfm():
         track = track.replace("#track-", "")
         session = flask.request.cookies.get("lastfm")
 
-        app.logger.debug("LastFM request: method=%s track=%s session=%s", method, track, bool(session))
+        app.logger.debug(
+            "LastFM request: method=%s track=%s session=%s",
+            method,
+            track,
+            bool(session),
+        )
 
         if not session:
             return ""
@@ -317,7 +327,7 @@ def lastfm():
 
     # already access allowed redirect to LastFM
     if "lastfm" in flask.request.cookies:
-        return flask.redirect('https://www.last.fm/')
+        return flask.redirect("https://www.last.fm/")
 
     # callback from LastFM after user auth
     if "token" in flask.request.args:
@@ -327,9 +337,7 @@ def lastfm():
         if not session:
             flask.abort(400)
 
-        response = flask.make_response(
-            flask.redirect(flask.url_for("get_albums"))
-        )
+        response = flask.make_response(flask.redirect(flask.url_for("get_albums")))
         response.set_cookie("lastfm", session, samesite="Strict")
 
         return response
@@ -340,23 +348,24 @@ def lastfm():
     return flask.redirect(url)
 
 
-@ws.on('watch_job')
+@ws.on("watch_job")
 def watch_job(data):
     """Client registers interest in a specific job and joins a room for that
     job ID."""
-    job_id = data.get('job', '')
+    job_id = data.get("job", "")
     if not job_id:
         return
 
     payload = dispatcher.job_ready(job_id)
     if payload:
-        flask_socketio.emit('download_ready', payload)
+        flask_socketio.emit("download_ready", payload)
     else:
-        flask_socketio.join_room('job:' + job_id)
+        flask_socketio.join_room("job:" + job_id)
 
 
-class App():
+class App:
     """Class to encapsulate the Flask app and its configuration."""
+
     def __init__(self, config, lib, media):
         """Initialize the app with the given configuration, library, and media
         directory."""
@@ -366,26 +375,20 @@ class App():
         self.ws = ws
         self.dispatcher = dispatcher
 
-        if "zipdir" in self.config.keys():
-            self.app.config["zipdir"] = self.config["zipdir"].get()
-        else:
-            self.app.config["zipdir"] = tempfile.gettempdir()
-
-        if 'lastfm' in self.config.keys():
-            self.app.config["lastfm"] = self.config["lastfm"].get()
-
+        self.app.config["zipdir"] = self.config["zipdir"].get()
         self.app.config["lib"] = self.lib
         self.app.config["media"] = media
         self.app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 31536000
         self.app.config["SECRET_KEY"] = os.urandom(24).hex()
 
-        self._cors_origins = self.config["cors_origins"].get(str)
+        if "lastfm" in self.config.keys():
+            self.app.config["lastfm"] = self.config["lastfm"].get()
 
         try:
-            _sv = pkg_version("beets-store")
+            sv = importlib.metadata.version("beets-store")
         except Exception:
-            _sv = uuid.uuid4().hex
-        self.app.jinja_env.globals["sv"] = _sv
+            sv = uuid.uuid4().hex
+        self.app.jinja_env.globals["sv"] = sv
 
         media = Blueprint(
             "media",
@@ -397,31 +400,35 @@ class App():
 
     def run(self):
         """Run the Flask app with the configured host, port, and SSL context."""
-        debug = os.environ.get('FLASK_DEBUG', '').lower() in ('true', '1', 'yes')
-        async_mode = 'threading' if debug else 'gevent'
+        debug = os.environ.get("FLASK_DEBUG", "").lower() in ("true", "1", "yes")
+        async_mode = "threading" if debug else "gevent"
 
-        self.ws.init_app(self.app, async_mode=async_mode,
-                         cors_allowed_origins=self._cors_origins,
-                         logger=True, engineio_logger=True)
+        self.ws.init_app(
+            self.app,
+            async_mode=async_mode,
+            cors_allowed_origins=self.config["cors_origins"].get(str),
+            logger=True,
+            engineio_logger=True,
+        )
 
         kwargs = {
-            'host': self.config["host"].get(),
-            'port': self.config["port"].get(int),
-            'debug': debug,
+            "host": self.config["host"].get(),
+            "port": self.config["port"].get(int),
+            "debug": debug,
         }
 
-        if os.environ.get('FLASK_SSL_CONTEXT'):
-            ssl_dir = os.environ.get('FLASK_SSL_CONTEXT')
-            kwargs['ssl_context'] = (
-                os.path.join(ssl_dir, 'cert.pem'),
-                os.path.join(ssl_dir, 'key.pem'),
+        if os.environ.get("FLASK_SSL_CONTEXT"):
+            ssl_dir = os.environ.get("FLASK_SSL_CONTEXT")
+            kwargs["ssl_context"] = (
+                os.path.join(ssl_dir, "cert.pem"),
+                os.path.join(ssl_dir, "key.pem"),
             )
 
         self.dispatcher.run()
 
         if debug:
-            kwargs['use_reloader'] = True
-            kwargs['threaded'] = True
+            kwargs["use_reloader"] = True
+            kwargs["threaded"] = True
             self.app.run(**kwargs)
         else:
             self.ws.run(self.app, **kwargs)
