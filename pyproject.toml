@@ -13,8 +13,7 @@ dependencies = [
     "redis >= 4.1.4",
     "requests >= 2.25.0",
     "rq >= 1.10.1",
-    "gevent >= 24.2.1",
-    "gevent-websocket >= 0.10.1",
+    "gevent >= 25.9.1",
 ]
 license = {text = "BSD"}
 requires-python = ">=3.11"

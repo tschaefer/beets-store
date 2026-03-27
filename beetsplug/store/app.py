@@ -399,7 +399,7 @@ class App:
         app.register_blueprint(media)
 
     def run(self):
-        """Run the Flask app with the configured host, port, and SSL context."""
+        """Run the Flask app with the configured host, port, and websocket."""
         debug = os.environ.get("FLASK_DEBUG", "").lower() in ("true", "1", "yes")
         async_mode = "threading" if debug else "gevent"
 
@@ -416,13 +416,6 @@ class App:
             "port": self.config["port"].get(int),
             "debug": debug,
         }
-
-        if os.environ.get("FLASK_SSL_CONTEXT"):
-            ssl_dir = os.environ.get("FLASK_SSL_CONTEXT")
-            kwargs["ssl_context"] = (
-                os.path.join(ssl_dir, "cert.pem"),
-                os.path.join(ssl_dir, "key.pem"),
-            )
 
         self.dispatcher.run()
 
