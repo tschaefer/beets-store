@@ -3,6 +3,7 @@
 """Beets store Redis queue worker."""
 
 import os
+import pathlib
 import zipfile
 
 from rq import Queue, Callback
@@ -16,13 +17,20 @@ def bundle(arguments):
     zfile = arguments.get("zfile")
     files = arguments.get("files")
 
-    if os.path.exists(zfile):
-        os.remove(zfile)
+    try:
+        pathlib.Path(zfile).unlink(missing_ok=True)
+    except Exception as e:
+        print(f"Error deleting existing zip file: {e}")
+        raise
 
-    with zipfile.ZipFile(zfile, "w", zipfile.ZIP_DEFLATED) as zipfh:
-        for file in files:
-            file_str = file.decode("utf-8") if isinstance(file, bytes) else file
-            zipfh.write(file_str, os.path.basename(file_str))
+    try:
+        with zipfile.ZipFile(zfile, "w", zipfile.ZIP_DEFLATED) as zipfh:
+            for file in files:
+                file_str = file.decode("utf-8") if isinstance(file, bytes) else file
+                zipfh.write(file_str, os.path.basename(file_str))
+    except Exception as e:
+        print(f"Error creating zip file: {e}")
+        raise
 
     return zfile
 
