@@ -86,6 +86,10 @@ def inject_lastfm():
 @app.after_request
 def log_request(response):
     """Log each request in logfmt format."""
+
+    if flask.request.path.startswith("/healthz"):
+        return response
+
     app.logger.info(
         "request",
         extra={
@@ -146,6 +150,12 @@ def set_media_headers(response):
         response.headers["Cache-Control"] = "max-age=31536000, private"
 
     return response
+
+
+@app.route("/healthz/")
+def healthz():
+    """Health check endpoint."""
+    return "OK", 200
 
 
 @app.route("/tracks/", methods=["GET", "POST"])
