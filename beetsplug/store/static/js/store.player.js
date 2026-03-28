@@ -11,6 +11,9 @@
   var _pageTracks = [];
   var _pageAlbum = {};
 
+  // BroadcastChannel for cross-tab stop-on-play behavior.
+  var _bc = window.BroadcastChannel ? new BroadcastChannel("beets-store-player") : null;
+
   // --- DOM ---
 
   var audio = document.getElementById("audio");
@@ -161,6 +164,8 @@
     var heart = document.getElementById("navbar-heart");
 
     if (heart) heart.classList.add("playing", "fa-beat-fade");
+
+    if (_bc) _bc.postMessage({ type: "stop" });
   });
 
   // When a track is paused, update the state and notify LastFM.
@@ -318,6 +323,11 @@
 
   // Fade out the waveform and stop the animation when playback pauses or ends.
   function stopWaveAnimation() {
+    if (_waveAnimId) {
+      cancelAnimationFrame(_waveAnimId);
+      _waveAnimId = null;
+    }
+
     function fadeStep() {
       _waveAlpha -= 0.04;
       if (_waveAlpha <= 0) {
@@ -334,11 +344,6 @@
     }
 
     _waveFadeId = requestAnimationFrame(fadeStep);
-
-    if (_waveAnimId) {
-      cancelAnimationFrame(_waveAnimId);
-      _waveAnimId = null;
-    }
   }
 
   // --- Controls ---
@@ -426,6 +431,15 @@
       sendLastFM("now_playing", _playerTracks[_index].id);
     }
   });
+
+  // --- Cross-tab sync ---
+
+  // When another tab starts playing, pause this one.
+  if (_bc) {
+    _bc.onmessage = (e) => {
+      if (e.data.type === "stop") audio.pause();
+    };
+  }
 
   // --- Public API ---
 
