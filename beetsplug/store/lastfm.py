@@ -2,11 +2,9 @@
 
 """Beets store Last FM module for authentication and scrobble."""
 
-from datetime import datetime
 import hashlib
 from time import time
 
-import flask
 import requests
 
 
@@ -39,15 +37,9 @@ class LastFM:
         parameters.update({"api_sig": self.__sign_request(parameters)})
 
         response = requests.post(API_ENDPOINT, parameters)
-        now = datetime.now()
-        self.logger.info(
-            '%s - - [%s] "POST %s" %s -'
-            % (
-                flask.request.remote_addr,
-                now.strftime("%d/%b/%Y %H:%M:%S"),
-                "lastfm." + method,
-                response.status_code,
-            )
+        self.app.logger.info(
+            "LastFM API request",
+            extra={"method": method, "status": response.status_code},
         )
 
         return response
@@ -93,7 +85,7 @@ class LastFM:
 
             return data["session"]["key"]
         except (requests.RequestException, ValueError, KeyError) as e:
-            self.logger.error("LastFM auth.getSession failed: %s", e)
+            self.logger.error("LastFM auth.getSession failed", extra={"error": str(e)})
             return None
 
     def __sign_request(self, parameters):

@@ -13,6 +13,8 @@ fi
 BEETS_REDIS_URL=${BEETS_REDIS_URL:=redis://beets_redis:6379}
 export BEETS_REDIS_URL
 
+BEETS_LOG_LEVEL=${BEETS_LOG_LEVEL:=INFO}
+
 echo "Starting beets ..."
-rq worker --url $BEETS_REDIS_URL &
+rq worker --url $BEETS_REDIS_URL --logging_level $BEETS_LOG_LEVEL &
 beet --config $BEETS_CONFIG store ${BEETS_BIND_IP:=0.0.0.0} ${BEETS_BIND_PORT:=3000}

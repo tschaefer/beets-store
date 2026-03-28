@@ -7,30 +7,10 @@ import base64
 import beets
 import flask
 
-from logging.config import dictConfig
+from . import log
 
-"""Logging configuration."""
-dictConfig(
-    {
-        "version": 1,
-        "formatters": {
-            "default": {
-                "format": "%(message)s",
-            }
-        },
-        "handlers": {
-            "wsgi": {
-                "class": "logging.StreamHandler",
-                "stream": "ext://flask.logging.wsgi_errors_stream",
-                "formatter": "default",
-            }
-        },
-        "root": {"level": "INFO", "handlers": ["wsgi"]},
-    }
-)
-
-if os.environ.get("FLASK_DEBUG", "").lower() in ("true", "1", "yes"):
-    beets.config["log"]["debug"] = True
+debug = os.environ.get("BEETS_DEBUG", "").lower() in ("true", "1", "yes")
+log.configure(debug=debug)
 
 
 ALBUM_ART_PLACEHOLDER = """

@@ -84,6 +84,20 @@ def inject_lastfm():
 
 
 @app.after_request
+def log_request(response):
+    """Log each request in logfmt format."""
+    app.logger.info(
+        "request",
+        extra={
+            "method": flask.request.method,
+            "path": flask.request.path,
+            "status": response.status_code,
+        },
+    )
+    return response
+
+
+@app.after_request
 def set_security_headers(response):
     """Set security headers on every response."""
     csp = (
@@ -400,15 +414,15 @@ class App:
 
     def run(self):
         """Run the Flask app with the configured host, port, and websocket."""
-        debug = os.environ.get("FLASK_DEBUG", "").lower() in ("true", "1", "yes")
+        debug = os.environ.get("BEETS_DEBUG", "").lower() in ("true", "1", "yes")
         async_mode = "threading" if debug else "gevent"
 
         self.ws.init_app(
             self.app,
             async_mode=async_mode,
             cors_allowed_origins=self.config["cors_origins"].get(str),
-            logger=True,
-            engineio_logger=True,
+            logger=self.app.logger,
+            engineio_logger=self.app.logger if debug else False,
         )
 
         kwargs = {

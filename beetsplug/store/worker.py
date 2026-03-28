@@ -17,20 +17,12 @@ def bundle(arguments):
     zfile = arguments.get("zfile")
     files = arguments.get("files")
 
-    try:
-        pathlib.Path(zfile).unlink(missing_ok=True)
-    except Exception as e:
-        print(f"Error deleting existing zip file: {e}")
-        raise
+    pathlib.Path(zfile).unlink(missing_ok=True)
 
-    try:
-        with zipfile.ZipFile(zfile, "w", zipfile.ZIP_DEFLATED) as zipfh:
-            for file in files:
-                file_str = file.decode("utf-8") if isinstance(file, bytes) else file
-                zipfh.write(file_str, os.path.basename(file_str))
-    except Exception as e:
-        print(f"Error creating zip file: {e}")
-        raise
+    with zipfile.ZipFile(zfile, "w", zipfile.ZIP_DEFLATED) as zipfh:
+        for file in files:
+            file_str = file.decode("utf-8") if isinstance(file, bytes) else file
+            zipfh.write(file_str, os.path.basename(file_str))
 
     return zfile
 
