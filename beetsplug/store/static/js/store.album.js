@@ -39,7 +39,9 @@
           }
         };
 
-        xhr.onerror = () => { btn.disabled = false; };
+        xhr.onerror = () => {
+          btn.disabled = false;
+        };
 
         xhr.send();
       });
@@ -81,15 +83,19 @@
       showToast(
         '<div class="toast overflow-hidden">' +
           '<div class="d-flex align-items-stretch">' +
-            art +
-            '<div class="toast-body d-flex align-items-center gap-2 overflow-hidden">' +
-              '<i class="fa-solid fa-download flex-shrink-0"></i>' +
-              '<a href="' + data.url + '" class="text-white text-decoration-none text-truncate">' + label + "</a>" +
-            "</div>" +
-            '<button type="button" class="btn-close btn-close-white flex-shrink-0 me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
+          art +
+          '<div class="toast-body d-flex align-items-center gap-2 overflow-hidden">' +
+          '<i class="fa-solid fa-download flex-shrink-0"></i>' +
+          '<a href="' +
+          data.url +
+          '" class="text-white text-decoration-none text-truncate">' +
+          label +
+          "</a>" +
           "</div>" +
-        "</div>",
-        true
+          '<button type="button" class="btn-close btn-close-white flex-shrink-0 me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
+          "</div>" +
+          "</div>",
+        true,
       );
     });
 
@@ -104,14 +110,16 @@
       showToast(
         '<div class="toast text-bg-danger">' +
           '<div class="d-flex">' +
-            '<div class="toast-body d-flex align-items-center gap-2 overflow-hidden">' +
-              '<i class="fa-solid fa-circle-exclamation flex-shrink-0"></i>' +
-              '<span class="text-truncate">' + label + " \u2014 download failed.</span>" +
-            "</div>" +
-            '<button type="button" class="btn-close btn-close-white flex-shrink-0 me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
+          '<div class="toast-body d-flex align-items-center gap-2 overflow-hidden">' +
+          '<i class="fa-solid fa-circle-exclamation flex-shrink-0"></i>' +
+          '<span class="text-truncate">' +
+          label +
+          " \u2014 download failed.</span>" +
           "</div>" +
-        "</div>",
-        false
+          '<button type="button" class="btn-close btn-close-white flex-shrink-0 me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
+          "</div>" +
+          "</div>",
+        false,
       );
     });
   });

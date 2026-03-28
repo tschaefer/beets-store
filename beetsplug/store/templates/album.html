@@ -76,6 +76,6 @@
     </div>
   </div>
   <script type="application/json" id="album-data">
-  {"tracks": [{% for track in album.tracks %}{"file": {{ track.path|tojson }}, "title": {{ track.title|tojson }}, "id": "#track-{{ track.id }}"}{% if not loop.last %}, {% endif %}{% endfor %}], "album": {"id": {{ album.id }}, "album": {{ album.album|tojson }}, "albumartist": {{ album.albumartist|tojson }}}}
+  {"tracks": [{% for track in album.tracks %}{"file": {{ track.path|tojson }}, "title": {{ track.title|tojson }}, "id": "#track-{{ track.id }}"}{% if not loop.last %}, {% endif %}{% endfor %}], "album": {"id": {{ album.id }}, "album": {{ album.album|tojson }}, "albumartist": {{ album.albumartist|tojson }}, "artUrl": {{ album.artpath|tojson }}}}
   </script>
 {% endblock %}

@@ -12,7 +12,9 @@
   var pageAlbum = {};
 
   // BroadcastChannel for cross-tab stop-on-play behavior.
-  var bc = window.BroadcastChannel ? new BroadcastChannel("beets-store-player") : null;
+  var bc = window.BroadcastChannel
+    ? new BroadcastChannel("beets-store-player")
+    : null;
 
   // --- DOM ---
 
@@ -38,7 +40,7 @@
           tracks: playerTracks,
         }),
       );
-    } catch (e) {}
+    } catch (_e) {}
   }
 
   // Read the player state from local storage, or return null if not found or invalid.
@@ -53,7 +55,7 @@
       if (!s || !Array.isArray(s.tracks) || !s.tracks.length) return null;
 
       return s;
-    } catch (e) {
+    } catch (_e) {
       return null;
     }
   }
@@ -138,6 +140,16 @@
       setTrackMarker(idx + 1);
     }
     saveState(idx, pos || 0);
+
+    if (navigator.mediaSession) {
+      var t = playerTracks[idx];
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: t.title,
+        artist: playerAlbum.albumartist,
+        album: playerAlbum.album,
+        artwork: playerAlbum.artUrl ? [{ src: playerAlbum.artUrl }] : [],
+      });
+    }
   }
 
   // Update the progress bar fill as the track plays.
@@ -306,8 +318,7 @@
     };
   }
 
-  // Register MediaSession handlers so native controls (lock screen, headphones)
-  // call our code directly for reliable play/pause/skip behaviour.
+  // Register MediaSession action handlers so native controls call our code directly for play/pause/skip.
   if (navigator.mediaSession) {
     navigator.mediaSession.setActionHandler("play", () => {
       audio.play().catch(() => {});
@@ -318,21 +329,20 @@
     navigator.mediaSession.setActionHandler("previoustrack", () => {
       if (index > 0) {
         loadTrack(--index);
-        audio.play().catch(() => {});
+        if (isPlaying) audio.play().catch(() => {});
       }
     });
     navigator.mediaSession.setActionHandler("nexttrack", () => {
       if (index + 1 < playerTracks.length) {
         loadTrack(++index);
-        audio.play().catch(() => {});
+        if (isPlaying) audio.play().catch(() => {});
       }
     });
   }
 
   // --- Public API ---
 
-  // This function is called by the album page on every load with the current
-  // page's track list and album info.
+  // This function is called by the album page on every load with the current page's track list and album info.
   window.loadAlbum = (tracks, album) => {
     pageTracks = tracks;
     pageAlbum = album;
@@ -355,8 +365,7 @@
     }
   };
 
-  // Listen for htmx page load events to update the track marker in the page
-  // track list.
+  // Listen for htmx page load events to update the track marker in the page track list.
   document.body.addEventListener("htmx:afterSettle", (e) => {
     if (e.detail.target.id !== "page-content") return;
     if (!playerTracks.length) return;
