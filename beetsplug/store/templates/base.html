@@ -93,9 +93,7 @@
   <script src="{{ url_for('static', filename='js/bootstrap-5.3.3.bundle.min.js') }}?v={{ sv }}"></script>
   <script src="{{ url_for('static', filename='js/htmx.min.js') }}?v={{ sv }}"></script>
   <script src="{{ url_for('static', filename='js/socket.io-4.8.2.min.js') }}?v={{ sv }}"></script>
-  <script src="{{ url_for('static', filename='js/store.player.js') }}?v={{ sv }}"></script>
-  <script src="{{ url_for('static', filename='js/store.htmx.js') }}?v={{ sv }}"></script>
-  <script src="{{ url_for('static', filename='js/store.album.js') }}?v={{ sv }}"></script>
+  <script type="module" src="{{ url_for('static', filename='js/store.js') }}?v={{ sv }}"></script>
 
 </body>
 </html>

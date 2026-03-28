@@ -37,7 +37,7 @@ class LastFM:
         parameters.update({"api_sig": self.__sign_request(parameters)})
 
         response = requests.post(API_ENDPOINT, parameters)
-        self.app.logger.info(
+        self.logger.info(
             "LastFM API request",
             extra={"method": method, "status": response.status_code},
         )

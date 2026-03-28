@@ -1,11 +1,4 @@
 {
-  "linter": {
-    "rules": {
-      "correctness": {
-        "noInnerDeclarations": "off"
-      }
-    }
-  },
   "javascript": {
     "formatter": {
         "indentStyle": "space"
