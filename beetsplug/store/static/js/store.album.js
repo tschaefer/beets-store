@@ -141,7 +141,32 @@ function albumDownloadFailed(data) {
 }
 
 
+/**
+ * Indicate a lost WebSocket connection by switching the navbar heart to a cracked heart.
+ */
+function albumOnDisconnect() {
+  const heart = document.getElementById("navbar-heart");
+  if (heart) {
+    heart.classList.remove("fa-heart");
+    heart.classList.add("fa-heart-crack");
+  }
+}
+
+/**
+ * Restore the navbar heart icon when the WebSocket connection is re-established.
+ */
+function albumOnConnect() {
+  const heart = document.getElementById("navbar-heart");
+  if (heart) {
+    heart.classList.remove("fa-heart-crack");
+    heart.classList.add("fa-heart");
+  }
+}
+
+
 albumAttachDownloadButton();
 document.addEventListener("htmx:afterSwap", albumAttachDownloadButton);
 albumNotifySocket.on("download_ready", albumDownloadReady);
 albumNotifySocket.on("download_failed", albumDownloadFailed);
+albumNotifySocket.on("disconnect", albumOnDisconnect);
+albumNotifySocket.on("connect", albumOnConnect);
