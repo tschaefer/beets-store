@@ -85,17 +85,34 @@ function playerSendLastFM(method, trackId) {
 }
 
 /**
- * Show or hide the LastFM icon in the player bar based on the presence of the session cookie.
+ * Navigate to the LastFM auth page (full page — auth flow involves external redirects).
  */
-function playerShowHideLastFMIcon() {
+function playerLastFMAuthClick() {
+  window.location.href = "/lastfm/";
+}
+
+/**
+ * Update the LastFM icon state based on whether the user is authenticated.
+ * Mutes the icon and enables click-to-auth when no session cookie is present;
+ * restores normal colour and removes the handler when authenticated.
+ */
+function playerUpdateLastFMIcon() {
   const el = document.getElementById("player-lastfm");
   if (!el) return;
 
-  const visible = document.cookie
+  const authenticated = document.cookie
     .split(";")
     .some((c) => c.trim().startsWith("lastfm="));
 
-  el.style.display = visible ? "inline" : "none";
+  if (authenticated) {
+    el.style.opacity = "";
+    el.style.cursor = "";
+    el.removeEventListener("click", playerLastFMAuthClick);
+  } else {
+    el.style.opacity = "0.3";
+    el.style.cursor = "pointer";
+    el.addEventListener("click", playerLastFMAuthClick);
+  }
 }
 
 // --- Display ---
@@ -189,7 +206,7 @@ export const playerLoadAlbum = (tracks, album) => {
   const pageArt = document.querySelector("#page-content .card img");
   playerPageAlbum.artUrl = album.artUrl || (pageArt ? pageArt.src : "");
 
-  playerShowHideLastFMIcon();
+  playerUpdateLastFMIcon();
 
   if (playerTracks.length) {
     const currentFile = playerTracks[playerIndex].file;
@@ -210,8 +227,9 @@ export const playerLoadAlbum = (tracks, album) => {
 playerAudio.addEventListener("timeupdate", () => {
   if (!playerAudio.duration) return;
 
-  // biome-ignore lint: Readabillity
-  playerProgressFill.style.width = (playerAudio.currentTime / playerAudio.duration) * 100 + "%";
+  playerProgressFill.style.width =
+    // biome-ignore lint: Readabillity
+    (playerAudio.currentTime / playerAudio.duration) * 100 + "%";
 });
 
 // When the user seeks, update the state with the new position.
@@ -237,7 +255,8 @@ playerAudio.addEventListener("pause", () => {
   playerIsPlaying = false;
   playerUpdatePlayPauseIcon();
 
-  if (playerTracks.length) playerSaveState(playerIndex, playerAudio.currentTime);
+  if (playerTracks.length)
+    playerSaveState(playerIndex, playerAudio.currentTime);
 
   const heart = document.getElementById("navbar-heart");
   if (heart) heart.classList.remove("playing", "fa-beat-fade");
@@ -264,7 +283,8 @@ playerProgressBar.addEventListener("click", (e) => {
   if (!playerAudio.duration) return;
 
   const rect = playerProgressBar.getBoundingClientRect();
-  playerAudio.currentTime = ((e.clientX - rect.left) / rect.width) * playerAudio.duration;
+  playerAudio.currentTime =
+    ((e.clientX - rect.left) / rect.width) * playerAudio.duration;
 });
 
 // Save position every 10 seconds while playing.
@@ -277,22 +297,20 @@ setInterval(() => {
 // --- Controls ---
 
 // Play/pause toggle.
-document
-  .querySelector(".btn-playpause")
-  .addEventListener("click", function () {
-    this.blur();
+document.querySelector(".btn-playpause").addEventListener("click", function () {
+  this.blur();
 
-    if (!playerTracks.length) return;
+  if (!playerTracks.length) return;
 
-    if (playerIsPlaying) {
-      playerAudio.pause();
-    } else {
-      playerAudio.play().catch((e) => {
-        console.warn("Playback failed:", e);
-      });
-      playerSendLastFM("now_playing", playerTracks[playerIndex].id);
-    }
-  });
+  if (playerIsPlaying) {
+    playerAudio.pause();
+  } else {
+    playerAudio.play().catch((e) => {
+      console.warn("Playback failed:", e);
+    });
+    playerSendLastFM("now_playing", playerTracks[playerIndex].id);
+  }
+});
 
 // Next track.
 document.querySelector(".btn-next").addEventListener("click", function () {
@@ -395,7 +413,7 @@ if (navigator.mediaSession) {
 
 playerBar.style.display = "block";
 document.body.classList.add("player-active");
-playerShowHideLastFMIcon();
+playerUpdateLastFMIcon();
 
 // On page load, try to restore the player state from localStorage.
 const saved = playerReadState();
@@ -440,4 +458,3 @@ document.body.addEventListener("htmx:afterSettle", (e) => {
   }
   playerSetTrackMarker(0);
 });
-

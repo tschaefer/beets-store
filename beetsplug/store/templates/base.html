@@ -36,11 +36,6 @@
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('get_tracks') }}">Tracks</a>
           </li>
-          {% if lastfm %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('lastfm') }}" hx-boost="false">LastFM</a>
-          </li>
-          {% endif %}
         </ul>
         <span id="navbar-form">{% block navbar_form %}{% endblock %}</span>
       </div>
@@ -76,7 +71,9 @@
         </div>
       </a>
       <div class="d-flex gap-1 ms-auto flex-shrink-0 align-items-center">
-        <i id="player-lastfm" class="fa-brands fa-lastfm me-1" aria-hidden="true" style="display: none;"></i>
+        {% if lastfm %}
+        <i id="player-lastfm" class="fa-brands fa-lastfm me-1" aria-hidden="true"></i>
+        {% endif %}
         <button type="button" class="btn btn-secondary btn-sm btn-prev">
           <span class="fa-solid fa-backward-step"></span>
         </button>
