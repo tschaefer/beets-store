@@ -51,11 +51,15 @@ store:
   host: "::1"
   port: 8080
   zipdir: /tmp/beets/store/zip
+  cors_origins: "https://music.example.com"
   lastfm:
-    cors_origins: "https://music.example.com"
     api_key: API_KEY
     secret_key: SECRET_KEY
 ```
+
+The `cors_origins` setting is optional by default all `*` requests are
+allowed.
+
 The `lastfm` settings are optional. If you don't want to scrobble leave the
 settings out.
 
