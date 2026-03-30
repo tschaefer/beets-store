@@ -19,7 +19,7 @@ def bundle(arguments):
 
     pathlib.Path(zfile).unlink(missing_ok=True)
 
-    with zipfile.ZipFile(zfile, "w", zipfile.ZIP_DEFLATED) as zipfh:
+    with zipfile.ZipFile(zfile, mode="w", compression=zipfile.ZIP_DEFLATED) as zipfh:
         for file in files:
             file_str = file.decode("utf-8") if isinstance(file, bytes) else file
             zipfh.write(file_str, os.path.basename(file_str))
@@ -49,6 +49,7 @@ class Worker:
         return self.q.enqueue(
             globals()[name],
             arguments,
+            job_timeout=600,
             on_success=Callback(job_succeeded),
             on_failure=Callback(job_failed),
         )
