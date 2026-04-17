@@ -36,7 +36,7 @@ jobs:
           images: ghcr.io/tschaefer/beets-store${{ github.tag }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v7.0.0
+        uses: docker/build-push-action@v7.1.0
         with:
           context: .
           file: ./Dockerfile
