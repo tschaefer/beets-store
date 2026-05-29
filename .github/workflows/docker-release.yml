@@ -28,7 +28,7 @@ jobs:
 
       - name: Create Docker image labels and tags
         id: meta
-        uses: docker/metadata-action@v6.0.0
+        uses: docker/metadata-action@v6.1.0
         env:
           REGISTRY: ghcr.io
           IMAGE_NAME: ${{ github.repository }}
