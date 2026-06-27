@@ -133,16 +133,16 @@ to your music directory and a local SQLite database.
 
 ```yaml
 directory: /path/to/your/music
-library: venv/store.db
+library: /path/to/venv/store.db
 import:
-  write: false
-  copy: false
-  move: false
-  resume: false
-  autotag: false
+  write: no
+  copy: no
+  move: no
+  resume: no
+  autotag: no
 plugins: store fetchart
 fetchart:
-  auto: false
+  auto: no
 store:
   host: "127.0.0.1"
   port: 8080
