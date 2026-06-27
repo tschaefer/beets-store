@@ -7,7 +7,7 @@ import flask
 import os
 import time
 import uuid
-import werkzeug
+import werkzeug.exceptions
 
 from flask import Flask, Blueprint
 import flask_socketio
@@ -50,8 +50,10 @@ def before_request():
     flask.g.lastfm = app.config.get("lastfm", None)
 
 
-@app.errorhandler(405)
-@app.errorhandler(404)
+@app.errorhandler(werkzeug.exceptions.NotFound)
+@app.errorhandler(werkzeug.exceptions.MethodNotAllowed)
+@app.errorhandler(werkzeug.exceptions.BadRequest)
+@app.errorhandler(werkzeug.exceptions.InternalServerError)
 def page_not_found(e):
     """Handle 404 and 405 errors with custom messages."""
     if isinstance(e, werkzeug.exceptions.NotFound):
@@ -74,6 +76,12 @@ def page_not_found(e):
 
         error = "Wubba Lubba Dub Dub!"
         return flask.jsonify(error=error), 400
+
+    if utils.request_is_json():
+        return flask.jsonify(error=str(e)), 500
+
+    error = "FIRE! WATER! DIRT! AIR!"
+    return flask.render_template("http_error.html", error=error), 500
 
 
 @app.context_processor
