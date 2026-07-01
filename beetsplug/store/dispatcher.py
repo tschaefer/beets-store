@@ -108,16 +108,13 @@ class Dispatcher:
             self.__on_failed(job_id, meta)
 
     def __on_succeeded(self, job_id, meta):
-        with self.app.app_context():
-            url = utils.media_url(meta["zfile"])
-
         payload = {
             "job": job_id,
             "album_id": meta["album_id"],
             "album": meta["album"],
             "albumartist": meta["albumartist"],
             "artpath": meta.get("artpath"),
-            "url": url,
+            "url": meta["zmedia"],
         }
 
         # Cache briefly so watch_job can catch up if the client joins after this emit.
