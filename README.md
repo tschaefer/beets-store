@@ -63,6 +63,9 @@ allowed.
 The `lastfm` settings are optional. If you don't want to scrobble leave the
 settings out.
 
+The `zipdir` is used to store the album zip files and currently must be placed
+within the `library` directory.
+
 Example beets [configuration file](https://gist.github.com/tschaefer/daa09959eb7272715800#gistcomment-1684418)
 
 Import audio files.

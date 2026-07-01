@@ -52,7 +52,7 @@ def decode(obj, kind="album"):
             return dic
 
         artpath = bytes_to_str(dic["artpath"]) if dic["artpath"] else None
-        if artpath and os.path.exists(artpath):
+        if artpath:
             dic["artpath"] = media_url(beets.util.syspath(artpath))
             return dic
 
@@ -85,6 +85,10 @@ def decode(obj, kind="album"):
 
 def media_url(path):
     """Convert a filesystem path to a URL relative to the media directory."""
+    return os.path.join(os.path.sep, "media", path)
+
+
+def media_abs_path(path):
+    """Convert a filesystem path to a URL relative to the media directory."""
     media_dir = flask.current_app.config["media"]
-    rel_path = os.path.relpath(path, media_dir)
-    return os.path.join(os.path.sep, "media", rel_path)
+    return os.path.join(os.path.sep, media_dir, path)

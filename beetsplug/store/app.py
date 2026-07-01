@@ -240,6 +240,7 @@ def get_album_file(album_id):
         flask.abort(404)
 
     zfile = os.path.join(flask.g.zipdir, "%d-%d.zip" % (album.id, int(album.added)))
+    zmedia = utils.media_url(os.path.relpath(zfile, app.config["media"]))
 
     active = dispatcher.job_active(album.id)
     if active:
@@ -248,17 +249,20 @@ def get_album_file(album_id):
     if os.path.exists(zfile):
         expired = int(time.time()) - int(os.stat(zfile).st_ctime) >= FILE_EXPIRY_SECONDS
         if not expired:
-            return flask.jsonify(url=utils.media_url(zfile))
+            return flask.jsonify(url=zmedia), 200
 
-    files = [beets.util.syspath(track.path) for track in album.items()]
+    files = [
+        utils.media_abs_path(beets.util.syspath(track.path)) for track in album.items()
+    ]
     if album.artpath:
-        artpath = beets.util.syspath(album.artpath)
+        artpath = utils.media_abs_path(beets.util.syspath(album.artpath))
         files.append(artpath)
 
     job = dispatcher.job_enqueue(
         {"zfile": zfile, "files": files},
         {
             "zfile": zfile,
+            "zmedia": zmedia,
             "album_id": album.id,
             "album": album.album,
             "albumartist": album.albumartist,
