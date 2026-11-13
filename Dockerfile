@@ -1,4 +1,4 @@
-FROM docker.io/library/debian:trixie-20261027-slim AS builder
+FROM docker.io/library/debian:trixie-20261104-slim AS builder
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -14,7 +14,7 @@ RUN PIPX_HOME=/opt/beets/.local/pipx \
     && rm -rf /build
 
 
-FROM docker.io/library/debian:trixie-20261027-slim
+FROM docker.io/library/debian:trixie-20261104-slim
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
